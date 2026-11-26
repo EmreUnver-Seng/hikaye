@@ -78,14 +78,14 @@ winget install Git.Git GitHub.cli astral-sh.uv Gyan.FFmpeg Microsoft.VisualStudi
 Terminali kapatıp aç (PATH yenilensin), sonra:
 ```powershell
 gh auth login
-gh repo clone <kullanıcı-adın>/hikaye "$HOME\Desktop\hikaye"
+gh repo clone EmreUnver-Seng/hikaye "$HOME\Desktop\hikaye"
 cd "$HOME\Desktop\hikaye"
 uv venv --python 3.12
 uv pip install -r requirements.txt
 [Environment]::SetEnvironmentVariable("PYTHONUTF8", "1", "User")
 ```
 - `.env` dosyasını oluştur: `.env.example`'ı kopyala, anahtarları şifre yöneticisinden yapıştır.
-- Git kimliği: `git config user.name "Emre"` ve GitHub noreply e-postası.
+- Git kimliği (depo klasöründe): `git config user.name "Emre"` ve `git config user.email "255063380+EmreUnver-Seng@users.noreply.github.com"`
 - Kontrol: `.venv\Scripts\python kod\test_anahtarlar.py`
 - Claude masaüstü uygulamasını kur, Code sekmesinde bu klasörü aç, kenar çubuğuna aynı üç bölümü (Planlama / Kod / Bölümler) ekle.
 
