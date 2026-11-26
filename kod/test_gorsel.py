@@ -32,6 +32,11 @@ from gorsel import (  # noqa: E402
     oran_uyarisi,
     sahne_promptu,
     sahneye_yerlestir,
+    secenek_gorselleri,
+    secenek_hedefi,
+    secenek_promptu,
+    secenek_yolu,
+    secenege_yerlestir,
     varyant_yolu,
     _sahneye,
 )
@@ -406,6 +411,98 @@ def test_istekler_mekan_ekler():
         metin = istekler_metni(veri, karakter_tarifleri(HIKAYE), kok, mekan_tarifleri(HIKAYE))
         s1 = metin[metin.index("## Sahne 1"):metin.index("## Sahne 2")]
         assert "Kuşkonmaz" in s1, s1
+
+
+# --- Seçim kartı görselleri ---
+
+def gorselli_veri():
+    veri = ornek_veri()
+    veri["ikilem"]["secenekler"] = {"A": {"metin": "Zarfı aç", "gorsel": "Açılmış zarf, içinde kâğıt."},
+                                    "B": "Söz verdin, açma"}
+    return veri
+
+
+def test_secenek_hedefi():
+    assert secenek_hedefi("secenekA") == "A"
+    assert secenek_hedefi("secenek_b") == "B"
+    assert secenek_hedefi("secenekC") is None
+    assert secenek_hedefi("riza") is None
+
+
+def test_secenek_yolu():
+    assert secenek_yolu(Path("g"), "A") == Path("g") / "secenek_A.png"
+
+
+def test_secenek_gorselleri_yalnizca_tarifliler():
+    assert secenek_gorselleri(gorselli_veri()) == {"A": ("Zarfı aç", "Açılmış zarf, içinde kâğıt.")}
+    assert secenek_gorselleri(ornek_veri()) == {}
+    veri = ornek_veri()
+    del veri["ikilem"]["secenekler"]
+    assert secenek_gorselleri(veri) == {}
+
+
+def test_secenek_promptu():
+    p = secenek_promptu("A", "Zarfı aç", "Açılmış zarf.", stil_var=True)
+    assert "Kare 1:1" in p and "Açılmış zarf." in p and "Zarfı aç" in p
+    assert "Ekteki 1. görsel yalnızca çizim tarzı" in p
+    assert "3 farklı görsel" in p
+    assert "Ekteki" not in secenek_promptu("A", "x", "y")
+
+
+def test_istekler_secim_karti_bolumu():
+    with tempfile.TemporaryDirectory() as d:
+        kok = Path(d)
+        bos_dosya(kok / "karakterler" / "stil.png")
+        metin = istekler_metni(gorselli_veri(), karakter_tarifleri(HIKAYE), kok)
+        assert "## Seçim kartı A" in metin, metin
+        assert "## Seçim kartı B" not in metin
+        bolum = metin[metin.index("## Seçim kartı A"):]
+        assert "karakterler/stil.png" in bolum and "--yerlestir secenekA" in bolum
+        assert "Açılmış zarf" in bolum
+        assert metin.index("## Sahne 3") < metin.index("## Seçim kartı A")
+
+
+def test_durum_secim_karti():
+    with tempfile.TemporaryDirectory() as d:
+        kok = Path(d)
+        g = kok / "gorseller"
+        metin = durum_metni(gorselli_veri(), g, kok)
+        assert "Seçim kartı A: yok" in metin, metin
+        assert "Seçim kartı B" not in metin
+        bos_dosya(secenek_yolu(g, "A"))
+        bos_dosya(secenek_yolu(g, "B"))
+        metin = durum_metni(gorselli_veri(), g, kok)
+        assert "Seçim kartı A: hazır" in metin, metin
+        assert "Seçim kartı B: hazır (senaryoda tarif yok)" in metin, metin
+
+
+def test_oran_uyarisi_kare():
+    assert oran_uyarisi(1024, 1024, (1080, 1080)) is None
+    uyari = oran_uyarisi(1080, 1920, (1080, 1080))
+    assert uyari and "kare (1:1)" in uyari
+
+
+def test_secenege_yerlestir_kare():
+    if not FFMPEG:
+        print("  (ffmpeg yok, atlandı)")
+        return
+    with tempfile.TemporaryDirectory() as d:
+        kaynak, hedef = Path(d) / "k.png", Path(d) / "g" / "secenek_A.png"
+        png_uret(kaynak, 1024, 1024)
+        assert secenege_yerlestir(kaynak, hedef) is None
+        assert boyut_oku(hedef) == (1080, 1080)
+        png_uret(kaynak, 768, 1344)
+        assert secenege_yerlestir(kaynak, hedef) is not None
+        assert boyut_oku(hedef) == (1080, 1080)
+
+
+def test_cli_secenek_iki_dosya_hata():
+    sonuc = subprocess.run(
+        [sys.executable, str(KOD / "gorsel.py"), str(KOK / "bolumler" / "bolum_01" / "senaryo.json"),
+         "--yerlestir", "secenekA", "x.png", "y.png"],
+        capture_output=True, encoding="utf-8", errors="replace")
+    assert sonuc.returncode == 1
+    assert "tek dosya" in sonuc.stdout, sonuc.stdout
 
 
 if __name__ == "__main__":

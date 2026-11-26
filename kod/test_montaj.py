@@ -21,7 +21,10 @@ from montaj import (  # noqa: E402
     CUMLE_SONU_PAYI,
     FONT_ADI,
     SAHNE_SONU,
+    KART_XLER,
+    KART_Y,
     CumleGirdisi,
+    KartSecenegi,
     MontajHatasi,
     SahneGirdisi,
     altyazi_olaylari,
@@ -31,10 +34,13 @@ from montaj import (  # noqa: E402
     birlestirme_komutu,
     girdileri_topla,
     gruplara_bol,
+    kart_komutu,
     kart_olaylari,
+    kart_plani,
     klip_komutu,
     montajla,
     sahne_secimi,
+    satirlara_bol,
     ses_filtresi,
     varyant_secimi,
     zaman_cizelgesi,
@@ -281,14 +287,51 @@ def test_altyazi_olaylari():
 def test_kart_olaylari():
     olaylar = "\n".join(kart_olaylari(IKILEM, 10.0, 4.0))
     kontrol("kart soru", "Zarfı şimdi açacak mısın?" in olaylar)
-    kontrol("kart A", "Zarfı aç" in olaylar and "Söz verdin, açma" in olaylar)
+    kontrol("kart A, B", "Zarfı aç" in olaylar and "Söz verdin," in olaylar and "açma" in olaylar)
     kontrol("kart not", "Yorumlara A ya da B yaz" in olaylar)
-    kontrol("kart zamanı", "0:00:10.00,0:00:14.00" in olaylar, olaylar)
+    kontrol("kart zamanı", "0:00:10.25,0:00:14.00" in olaylar, olaylar)
+    kontrol("soru da belirir", all("fad(" in o for o in kart_olaylari(IKILEM, 10.0, 4.0)))
     kontrol("kart fade", "\\fad(" in olaylar)
     son = "\n".join(kart_olaylari({"soru": "Sence bu gece gerçekten ne oldu?"}, 0, 4))
     kontrol("bölüm 8: soru", "ne oldu?" in son)
     kontrol("bölüm 8: Yorumlara yaz", "Yorumlara yaz" in son and "A ya da B" not in son, son)
-    kontrol("bölüm 8: kutu yok", "Secenek" not in son, son)
+    kontrol("bölüm 8: kart yok", ",Kart," not in son and ",Harf," not in son, son)
+    kontrol("yedek düzen: büyük harf", olaylar.count(",Harf,") == 2, olaylar)
+
+
+def test_kart_olaylari_gorselli():
+    plan = [KartSecenegi("A", "Zarfı aç", Path("g/secenek_A.png"), True),
+            KartSecenegi("B", "Söz verdin, açma", None, True)]
+    olaylar = kart_olaylari(IKILEM, 10.0, 4.0, plan)
+    metin = "\n".join(olaylar)
+    a = next(o for o in olaylar if "Zarfı aç" in o)
+    b = next(o for o in olaylar if "açma" in o)
+    kontrol("görselli kartta harf + metin", ",Kart," in a and "}A{" in a and "\\N" in a, a)
+    kontrol("A solda", f"\\pos({KART_XLER[0] + 225}," in a, a)
+    kontrol("B sağda", f"\\pos({KART_XLER[1] + 225}," in b, b)
+    kontrol("görselsiz B büyük harfli", metin.count(",Harf,") == 1, metin)
+    kontrol("B metni iki satır", "Söz verdin,\\Naçma" in b, b)
+    kontrol("çağrı kartların altında", f"\\pos(540,{KART_Y + 640 + 90})" in metin, metin)
+
+
+def test_satirlara_bol():
+    kontrol("kısa tek satır", satirlara_bol("Zarfı aç") == ["Zarfı aç"])
+    kontrol("uzun bölünür", satirlara_bol("Söz verdin, açma") == ["Söz verdin,", "açma"])
+    kontrol("tek uzun kelime", satirlara_bol("Kuşkonmazlılaştıramadıklarımız") ==
+            ["Kuşkonmazlılaştıramadıklarımız"])
+
+
+def test_kart_plani():
+    with tempfile.TemporaryDirectory() as tmp:
+        g = Path(tmp)
+        (g / "secenek_A.png").write_bytes(b"png")
+        ikilem = {"soru": "?", "secenekler": {"A": {"metin": "Aç", "gorsel": "zarf"}, "B": "Açma"}}
+        plan = kart_plani(ikilem, g)
+        kontrol("plan sırası", [k.harf for k in plan] == ["A", "B"], plan)
+        kontrol("A görselli", plan[0].gorsel == g / "secenek_A.png" and plan[0].tarif, plan)
+        kontrol("B görselsiz", plan[1].gorsel is None and not plan[1].tarif, plan)
+        kontrol("metin okunur", plan[0].metin == "Aç" and plan[1].metin == "Açma", plan)
+        kontrol("bölüm 8 boş plan", kart_plani({"soru": "?"}, g) == [])
 
 
 def test_ass_metni():
@@ -296,7 +339,7 @@ def test_ass_metni():
     metin = ass_metni(c, IKILEM)
     kontrol("ass PlayResY", "PlayResY: 1920" in metin and "PlayResX: 1080" in metin)
     kontrol("ass font", f",{FONT_ADI}," in metin)
-    kontrol("ass stiller", all(f"Style: {s}," in metin for s in ("Alt", "Soru", "Secenek", "Not")))
+    kontrol("ass stiller", all(f"Style: {s}," in metin for s in ("Alt", "Soru", "Kart", "Harf", "Not")))
     kontrol("ass kart", "Zarfı aç" in metin)
 
 
@@ -310,8 +353,25 @@ def test_komutlar():
     kontrol("klip kare", "-frames:v" in k and k[k.index("-frames:v") + 1] == "90")
     kontrol("klip girdi", "g/sahne1_a.png" in k)
     kontrol("klip karartma yok", "colorchannelmixer" not in metin)
-    kontrol("kart karartma", "colorchannelmixer" in " ".join(
-        klip_komutu("g.png", 120, 1.04, 1.04, "kart.mp4", karart=True)))
+
+    plan = [KartSecenegi("A", "Aç", Path("g/secenek_A.png"), True),
+            KartSecenegi("B", "Açma", None, False)]
+    kk = kart_komutu("g/sahne11_c.png", plan, 120, "kart.mp4")
+    km = " ".join(kk)
+    kontrol("kart liste", all(isinstance(p, str) for p in kk))
+    kontrol("kart karartma", "colorchannelmixer" in km)
+    kontrol("kart girdiler", kk.count("-i") == 2 and "g/sahne11_c.png" in kk
+            and str(Path("g/secenek_A.png")) in kk, kk)
+    kontrol("kartlar yan yana", f"overlay={KART_XLER[0]}:{KART_Y}" in km
+            and f"overlay={KART_XLER[1]}:{KART_Y}" in km, km)
+    kontrol("yuvarlak köşe", "geq=" in km and "hypot" in km, km)
+    kontrol("kart kare sayısı", kk[kk.index("-frames:v") + 1] == "120")
+    kontrol("kart tek kareden tekrar", "loop=loop=-1:size=1" in km, km)
+    kontrol("kartlar da belirir", "fade=t=in:st=0.25:d=0.4:alpha=1" in km, km)
+    kontrol("kart son sahnenin zoom'u", "scale=1166:2074" in " ".join(
+        kart_komutu("g.png", plan, 120, "kart.mp4", zoom=1.08)))
+    son = kart_komutu("g.png", [], 120, "kart.mp4")
+    kontrol("bölüm 8 kartsız", "geq" not in " ".join(son) and son.count("-i") == 1)
 
     c = zaman_cizelgesi(_girdiler(), {"s01_c1": 1.0, "s01_c2": 2.0, "s02_c1": 1.0})
     f = ses_filtresi(c, 1)
@@ -347,6 +407,8 @@ def test_uctan_uca():
         for n, renk in ((1, "navy"), (2, "purple")):
             _uret([ffmpeg, "-v", "error", "-y", "-f", "lavfi", "-i", f"color=c={renk}:s=1080x1920",
                    "-frames:v", "1", str(klasor / "gorseller" / f"sahne{n}_a.png")])
+        _uret([ffmpeg, "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=orange:s=1080x1080",
+               "-frames:v", "1", str(klasor / "gorseller" / "secenek_A.png")])
         for mp3 in (klasor / "sesler").glob("s0*_c*.mp3"):
             _uret([ffmpeg, "-v", "error", "-y", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono",
                    "-t", "0.5", "-c:a", "libmp3lame", str(mp3)])

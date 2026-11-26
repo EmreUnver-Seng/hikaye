@@ -45,7 +45,7 @@ python kod/montaj.py bolumler/bolum_01/senaryo.json --kuru             # render 
 ## Görüntü
 - Her sahne klibi: görsel tek kare olarak okunur, bir kez 4 kat (4320×7680) büyütülür, `zoompan` (`d=kare`) bütün kareleri bu tek kareden 1080×1920 üretir; tek sahneler yakınlaşır (zoom 1,00→1,08), çift sahneler uzaklaşır (1,08→1,00), merkezde. (`zoompan` kırpma konumunu tam piksele yuvarlar; 2 kat büyütme ilk tam bölümde gözle görülür titreme yaptı, 4 katta sıçrama çeyrek piksele iner.)
 - Cümle arası es 0,45 sn, sahne sonu es 0,7 sn (ilk tam bölümde 0,15/0,35 diyaloglar için fazla hızlı bulundu).
-- Kart klibi: kapsamdaki son sahnenin görseli sabit (zoom 1,04), %60 karartılmış.
+- Kart klibi (`kart_komutu`): kapsamdaki son sahnenin görseli sabit, son sahne klibinin bittiği zoom ile (kadraj sıçramasın); %60 karartılmış hâli ve seçenek kartları üstüne bindirilir (aşağıda). Kare tek sefer birleştirilir, `loop` ile 4 sn'ye (120 kare) tekrarlanır.
 - Kodlama: H.264 (`libx264`, `yuv420p`, CRF 20), ses AAC 192k, `+faststart`.
 
 ## Altyazı (ASS, `PlayResX/Y` 1080×1920)
@@ -55,11 +55,20 @@ python kod/montaj.py bolumler/bolum_01/senaryo.json --kuru             # render 
 - Metindeki `{`, `}` ve `\` ASS'yi bozmasın diye kaçırılır/temizlenir. Noktalama kelimeye yapışık, aynen gösterilir.
 - Konuşan ayrımı görsel olarak yapılmaz (ses zaten farklı).
 
-## Seçenek kartı (ASS olayları, kart süresince)
-- Soru: beyaz, 72 px, ekranın ~%35'inde, ortalı, satır kırmalı.
-- A ve B: koyu yarı saydam kutu içinde (`BorderStyle 3`), harf hardal sarısı, seçenek metni beyaz, 64 px; A ~%52, B ~%62 yükseklikte; 0,25 sn gecikmeli, kısa belirme (`\fad`).
-- Alt satır: "Yorumlara A ya da B yaz", 48 px, ~%75.
-- Bölüm 8 (`secenekler` yok): yalnızca soru + "Yorumlara yaz".
+## Seçim (ikilem) kartı
+İlk tam bölümden sonra kullanıcı isteğiyle yeniden tasarlandı (eski hâli: soru + alt alta iki kutulu yazı).
+
+**Düzen (1080×1920, piksel):**
+- Soru: beyaz, 72 px, ortalı, alttan y=700 çizgisine dayalı (`\an2`; uzun soru yukarı doğru büyür), satır kırmalı.
+- İki kart yan yana: A solda (x=60), B sağda (x=570), y=760, her biri 450×640. Yuvarlak köşe (yarıçap 36), koyu lacivert zemin ~%86 opak, 4 px hardal sarısı (`#E8B82D`) kenar çizgisi.
+- Kartın üstünde seçenek görseli: `gorseller/secenek_A.png` (1080×1080, `gorsel.py --yerlestir secenekA`) 410×410'a küçültülür, köşeleri yuvarlatılır (yarıçap 24), kart kenarından 20 px içeride.
+- Görselin altında (y=1208, `\an8`): hardal sarısı harf (76 px), altında beyaz seçenek metni (48 px). Metin kelime bölünmeden satır başına en fazla 14 karakterle elle satırlara ayrılır (ör. "Söz verdin," / "açma").
+- **Yedek düzen (görsel yoksa):** Görselin yerinde biraz daha açık lacivert yuvarlak köşeli kare ve ortasında 260 px hardal sarısı harf; altta yalnızca metin. Senaryoda `gorsel` tarifi olup dosya yoksa plan çıktısında uyarı ve yerleştirme komutu yazılır (hata değil).
+- Alt satır: "Yorumlara A ya da B yaz", 48 px, y=1490.
+- Bölüm 8 (`secenekler` yok): kart çizilmez; soru ortada (y=860) + "Yorumlara yaz".
+- **Belirme:** Kart klibi son sahnenin karartılmamış hâliyle başlar; 0,25 sn sonra 0,4 sn içinde kararma, kutular, görseller ve bütün yazılar (soru dahil) **birlikte** belirir. Karartılmış sahne + kartlar tek katman olarak `fade=…:alpha=1` ile karartılmamış sahnenin üstüne biner; yazılar ASS `\fad(400,0)` ile aynı anda. (İlk denemede yalnızca yazılar belirip kutular baştan duruyordu; kullanıcı beğenmedi.)
+
+**Yapım:** Kutular ffmpeg `color` kaynağı + `geq` ile çizilir: her piksel için yuvarlak köşeli dikdörtgene işaretli uzaklık hesaplanır (alfa kenarda yumuşatılır, kenar çizgisi aynı uzaklıktan). Görsellerin köşeleri aynı yöntemle saydamlaştırılır. Hepsi `overlay` ile tek kareye bindirilir. Yazılar ASS'de (`Soru`, `Kart`, `Harf`, `Not` stilleri) birleştirme sırasında basılır; böylece font ve kontur altyazıyla aynı kalır. `kart_plani`, `kart_olaylari`, `kart_komutu`, `satirlara_bol` ffmpeg'siz test edilir.
 
 ## Ses
 Tek `filter_complex`: her mp3 `aresample=44100`, sonuna slotuna kadar sessizlik (`apad=whole_dur`), kart için 4 sn sessizlik; hepsi `concat`. Toplam ses süresi = video süresi.
@@ -68,7 +77,7 @@ Tek `filter_complex`: her mp3 `aresample=44100`, sonuna slotuna kadar sessizlik 
 `pathlib.Path`, `encoding="utf-8"`, `shutil.which("ffmpeg"/"ffprobe")`, komutlar liste, `shell=True` yok. Windows'ta `ass` filtresinde `C:` iki noktası sorun çıkardığı için ffmpeg geçici çalışma klasöründe (`cwd`) çalıştırılır ve ASS + font klasörü **göreli, `/` ayraçlı** yollarla verilir. Geçici klasör bölüm klasörünün içinde açılır (`tempfile.TemporaryDirectory(dir=...)`; aynı sürücü, göreli yol kurulabilir) ve iş bitince/hata olsa da silinir. Font proje içinden (`fontsdir`), sistem fontu kullanılmaz.
 
 ## Test: `kod/test_montaj.py` (düz Python, pytest yok)
-ffmpeg'siz: `--sahne`/`--varyant` ayrıştırma ve hataları; eksik görsel/ses/kayıt ve eski metin listesi; zaman çizelgesi (süreler parametre olarak verilir, ffprobe çağrılmaz; kare yuvarlama); gruplama (noktalama, virgül, 4 kelime/karakter sınırı, tek kelimelik cümle); ASS zaman biçimi (`0:00:01.23`), kaçırma, vurgu olayları, kartta A/B ve bölüm 8; ffmpeg komut listeleri (liste, göreli yollar). ffmpeg varsa: geçici klasörde üretilmiş küçük görseller + kısa sessiz mp3'lerle uçtan uca render, çıktının süresi ffprobe ile kontrol (ffmpeg yoksa atlanır).
+ffmpeg'siz: `--sahne`/`--varyant` ayrıştırma ve hataları; eksik görsel/ses/kayıt ve eski metin listesi; zaman çizelgesi (süreler parametre olarak verilir, ffprobe çağrılmaz; kare yuvarlama); gruplama (noktalama, virgül, 4 kelime/karakter sınırı, tek kelimelik cümle); ASS zaman biçimi (`0:00:01.23`), kaçırma, vurgu olayları; seçim kartı planı (görsel var/yok, tarif), satır kırma, kart olayları (A solda/B sağda, görselli/yedek düzen, bölüm 8) ve kart komutu (girdiler, overlay konumları, geq köşe, kare sayısı); ffmpeg komut listeleri (liste, göreli yollar). ffmpeg varsa: geçici klasörde üretilmiş küçük görseller (A için seçenek görseli var, B yok) + kısa sessiz mp3'lerle uçtan uca render, çıktının süresi ffprobe ile kontrol (ffmpeg yoksa atlanır).
 **Gerçek deneme:** Bölüm 1 sahne 3 (gerçek sesler + kullanıcının Gemini'de üreteceği görseller) → `--sahne 3`.
 
 ## Proje geneline etkiler

@@ -33,6 +33,7 @@ SAHNE_ALANLARI = {"no", "gorsel", "karakterler", "cumleler"}
 SAHNE_ISTEGE_BAGLI = {"mekan"}  # yoksa uyarı verilir
 CUMLE_ALANLARI = {"konusan", "metin"}
 IKILEM_ALANLARI = {"soru", "secenekler"}
+SECENEK_ALANLARI = {"metin", "gorsel"}  # seçenek nesne yazılırsa; 'gorsel' isteğe bağlı
 
 
 class SenaryoHatasi(Exception):
@@ -239,8 +240,30 @@ def _ikilem_dogrula(d, ikilem, bolum):
     if not d.nesne(secenekler, "ikilem.secenekler", {"A", "B"}):
         return
     for harf in ("A", "B"):
-        if harf in secenekler:
-            d.metin(secenekler[harf], f"ikilem.secenekler.{harf}")
+        if harf not in secenekler:
+            continue
+        deger, konum = secenekler[harf], f"ikilem.secenekler.{harf}"
+        if isinstance(deger, dict):
+            if d.nesne(deger, konum, {"metin"}, SECENEK_ALANLARI):
+                if "metin" in deger:
+                    d.metin(deger["metin"], f"{konum}.metin")
+                if "gorsel" in deger:
+                    d.metin(deger["gorsel"], f"{konum}.gorsel")
+        elif not isinstance(deger, str):
+            d.hata(konum, f"yazı (\"...\") ya da {{\"metin\", \"gorsel\"}} nesnesi olmalı, "
+                          f"{_tur_adi(deger)} bulundu.")
+        else:
+            d.metin(deger, konum)
+
+
+def secenek_metni(deger):
+    """Seçenek değeri (yazı ya da {"metin", "gorsel"}) → ekranda yazacak metin."""
+    return deger["metin"] if isinstance(deger, dict) else deger
+
+
+def secenek_gorseli(deger):
+    """Seçenek değerindeki görsel tarifi; yoksa None."""
+    return deger.get("gorsel") if isinstance(deger, dict) else None
 
 
 def senaryo_yukle(yol):

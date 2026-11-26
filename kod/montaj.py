@@ -2,6 +2,9 @@
 
 Her sahne yavaş zoom'lu bir klip olur; cümle sesleri arka arkaya dizilir; o an
 söylenen kelimesi vurgulu altyazı ve sonda ikilem (seçenek) kartı eklenir.
+Seçim kartında A ve B yan yana iki yuvarlak köşeli kart olur; kartın üstünde
+seçenek görseli (gorseller/secenek_A.png), altında harf ve metin. Görsel yoksa
+yerinde büyük harf durur.
 Senaryo sırayla gezilir (zamanlama.json'daki eski kayıtlar yok sayılır), cümle
 süreleri mp3'lerin gerçek uzunluğundan (ffprobe) alınır.
 
@@ -24,7 +27,7 @@ from collections import namedtuple
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from senaryo import SenaryoHatasi, senaryo_yukle  # noqa: E402
+from senaryo import SenaryoHatasi, secenek_gorseli, secenek_metni, senaryo_yukle  # noqa: E402
 from ses import SesHatasi, dosya_adi, kayitlari_yukle  # noqa: E402
 
 KOK = Path(__file__).resolve().parent.parent
@@ -40,7 +43,6 @@ SAHNE_SONU = 0.7     # sahnenin son cümlesinden sonra (sn)
 BUYUTME = 4          # zoom'dan önce görselin büyütülme katı (titremeyi önler)
 KART_SURESI = 4.0
 ZOOM = 1.08          # tek sahneler 1→ZOOM yakınlaşır, çiftler ZOOM→1 uzaklaşır
-KART_ZOOM = 1.04
 KART_KARARTMA = 0.4  # kart görselinin parlaklık çarpanı (%60 karartma)
 HEDEF_SURE = (45, 90)
 HARFLER = ("a", "b", "c")
@@ -50,7 +52,27 @@ GRUP_KARAKTER = 22
 CUMLE_SONU_PAYI = 0.3  # cümlenin son kelimesi bittikten sonra altyazının kalma süresi
 BEYAZ = "&H00FFFFFF&"
 VURGU = "&H002DB8E8&"  # hardal sarısı #E8B82D (ASS: &HAABBGGRR)
-KART_GECIKME = 0.25
+KART_GECIKME = 0.25  # kart içeriği (soru, kartlar, yazılar) bu kadar sonra belirmeye başlar
+KART_BELIRME = 0.4   # belirme (fade in) süresi: kararma, kartlar ve yazılar birlikte
+_FAD = f"\\fad({round(KART_BELIRME * 1000)},0)"
+
+# --- Seçim kartı düzeni (1080×1920 üzerinde piksel) ---
+KART_GEN, KART_YUK = 450, 640       # her seçenek kartı
+KART_XLER = (60, 570)                # A solda, B sağda
+KART_Y = 760
+KART_YARICAP = 36
+KART_KENAR = 4                       # hardal sarısı kenar çizgisi kalınlığı
+KART_ZEMIN = ((13, 16, 32), 220)     # koyu lacivert, ~%86 opak (RGB, alfa 0–255)
+KART_VURGU_RGB = (232, 184, 45)      # #E8B82D
+KART_GORSEL = 410                    # seçenek görseli kare kenarı
+KART_IC_PAY = 20                     # kart kenarı ile görsel arası
+KART_GORSEL_YARICAP = 24
+YEDEK_ZEMIN = ((35, 42, 72), 210)    # görsel yoksa harfin arkasındaki kare
+KART_METIN_Y = KART_Y + KART_IC_PAY + KART_GORSEL + 18
+KART_SATIR = 14                      # kart metninde satır başına en fazla karakter
+SORU_ALT_Y = 700                     # soru bu çizgiye alttan dayanır (yukarı doğru büyür)
+CAGRI_Y = KART_Y + KART_YUK + 90
+SECENEK_HARFLERI = ("A", "B")
 
 KODLAMA = ["-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p",
            "-r", str(FPS)]
@@ -59,6 +81,9 @@ CumleGirdisi = namedtuple("CumleGirdisi", "anahtar mp3 kelimeler")
 SahneGirdisi = namedtuple("SahneGirdisi", "no gorsel cumleler")
 # sahneler: (no, gorsel, baslangic, kare); cumleler: (anahtar, mp3, baslangic, slot_bitis, kelimeler)
 Cizelge = namedtuple("Cizelge", "sahneler cumleler kart_baslangic kart_kare toplam")
+# Seçim kartındaki bir seçenek: gorsel = secenek_X.png yolu ya da None (yedek düzen);
+# tarif = senaryodaki görsel tarifi var mı (yoksa eksik görsel için uyarı verilmez).
+KartSecenegi = namedtuple("KartSecenegi", "harf metin gorsel tarif")
 
 
 class MontajHatasi(Exception):
@@ -257,26 +282,71 @@ def altyazi_olaylari(cizelge):
     return olaylar
 
 
-def kart_olaylari(ikilem, baslangic, sure):
-    """Seçenek kartının yazıları: soru, A/B kutuları ve yorum çağrısı."""
+def kart_plani(ikilem, gorsel_klasoru):
+    """İkilemdeki seçenekler (A, B sırasıyla); görsel dosyası varsa yolu, yoksa None."""
+    secenekler = ikilem.get("secenekler") or {}
+    plan = []
+    for harf in SECENEK_HARFLERI:
+        if harf not in secenekler:
+            continue
+        yol = Path(gorsel_klasoru) / f"secenek_{harf}.png"
+        plan.append(KartSecenegi(harf, secenek_metni(secenekler[harf]),
+                                 yol if yol.is_file() else None,
+                                 bool(secenek_gorseli(secenekler[harf]))))
+    return plan
+
+
+def satirlara_bol(metin, sinir=KART_SATIR):
+    """Metni kelime bölmeden en fazla `sinir` karakterlik satırlara ayırır."""
+    satirlar = []
+    for kelime_ in metin.split():
+        if satirlar and len(satirlar[-1]) + 1 + len(kelime_) <= sinir:
+            satirlar[-1] += " " + kelime_
+        else:
+            satirlar.append(kelime_)
+    return satirlar
+
+
+def _kart_merkezi(i):
+    return KART_XLER[i] + KART_GEN // 2
+
+
+def kart_olaylari(ikilem, baslangic, sure, plan=None):
+    """Seçenek kartının yazıları: soru, kartlardaki harf + metin ve yorum çağrısı.
+
+    plan: kart_plani() sonucu; verilmezse seçenekler görselsiz (yedek düzen) sayılır.
+    """
+    if plan is None:
+        plan = [KartSecenegi(h, secenek_metni(m), None, False)
+                for h, m in (ikilem.get("secenekler") or {}).items() if h in SECENEK_HARFLERI]
     bitis = baslangic + sure
-    olaylar = [_olay(baslangic, bitis, "Soru", f"{{\\an5\\pos(540,672)}}{ass_kacir(ikilem['soru'])}")]
-    secenekler = ikilem.get("secenekler")
-    if secenekler:
-        for harf, y in (("A", 998), ("B", 1190)):
-            olaylar.append(_olay(
-                baslangic + KART_GECIKME, bitis, "Secenek",
-                f"{{\\an5\\pos(540,{y})\\fad(250,0)}}{{\\c{VURGU}}}{harf}{{\\c{BEYAZ}}}  "
-                f"{ass_kacir(secenekler[harf])}"))
-        cagri = "Yorumlara A ya da B yaz"
+    gec = baslangic + KART_GECIKME
+    soru = ass_kacir(ikilem["soru"])
+    if plan:
+        olaylar = [_olay(gec, bitis, "Soru", f"{{\\an2\\pos(540,{SORU_ALT_Y}){_FAD}}}{soru}")]
     else:
-        cagri = "Yorumlara yaz"
-    olaylar.append(_olay(baslangic + KART_GECIKME, bitis, "Not",
-                         f"{{\\an5\\pos(540,1440)\\fad(250,0)}}{cagri}"))
+        olaylar = [_olay(gec, bitis, "Soru", f"{{\\an5\\pos(540,860){_FAD}}}{soru}")]
+    for i, k in enumerate(plan):
+        x = _kart_merkezi(i)
+        metin = "\\N".join(ass_kacir(satir) for satir in satirlara_bol(k.metin))
+        if k.gorsel is None:  # yedek düzen: görselin yerinde büyük harf, altta yalnızca metin
+            orta = KART_Y + KART_IC_PAY + KART_GORSEL // 2
+            olaylar.append(_olay(gec, bitis, "Harf",
+                                 f"{{\\an5\\pos({x},{orta}){_FAD}\\c{VURGU}}}{k.harf}"))
+            olaylar.append(_olay(gec, bitis, "Kart",
+                                 f"{{\\an8\\pos({x},{KART_METIN_Y + 20}){_FAD}}}{metin}"))
+        else:
+            olaylar.append(_olay(
+                gec, bitis, "Kart",
+                f"{{\\an8\\pos({x},{KART_METIN_Y}){_FAD}}}"
+                f"{{\\fs76\\c{VURGU}}}{k.harf}{{\\fs48\\c{BEYAZ}}}\\N{metin}"))
+    cagri = "Yorumlara A ya da B yaz" if plan else "Yorumlara yaz"
+    y = CAGRI_Y if plan else 1100
+    olaylar.append(_olay(gec, bitis, "Not", f"{{\\an5\\pos(540,{y}){_FAD}}}{cagri}"))
     return olaylar
 
 
-def ass_metni(cizelge, ikilem):
+def ass_metni(cizelge, ikilem, plan=None):
     stil = ("Style: {ad},{font},{boy},&H00FFFFFF,&H00FFFFFF,{kontur_renk},&H80000000,"
             "0,0,0,0,100,100,0,0,{kenar},{kontur},{golge},{hiza},{yan},{yan},{alt},1")
     stiller = [
@@ -284,13 +354,15 @@ def ass_metni(cizelge, ikilem):
                     kontur=7, golge=3, hiza=2, yan=80, alt=420),
         stil.format(ad="Soru", font=FONT_ADI, boy=72, kontur_renk="&H00000000", kenar=1,
                     kontur=6, golge=2, hiza=5, yan=90, alt=0),
-        stil.format(ad="Secenek", font=FONT_ADI, boy=64, kontur_renk="&H40281810", kenar=3,
-                    kontur=22, golge=0, hiza=5, yan=90, alt=0),
+        stil.format(ad="Kart", font=FONT_ADI, boy=48, kontur_renk="&H00000000", kenar=1,
+                    kontur=3, golge=0, hiza=8, yan=0, alt=0),
+        stil.format(ad="Harf", font=FONT_ADI, boy=260, kontur_renk="&H00000000", kenar=1,
+                    kontur=0, golge=0, hiza=5, yan=0, alt=0),
         stil.format(ad="Not", font=FONT_ADI, boy=48, kontur_renk="&H00000000", kenar=1,
                     kontur=4, golge=2, hiza=5, yan=90, alt=0),
     ]
     olaylar = altyazi_olaylari(cizelge) + kart_olaylari(
-        ikilem, cizelge.kart_baslangic, cizelge.kart_kare / FPS)
+        ikilem, cizelge.kart_baslangic, cizelge.kart_kare / FPS, plan)
     return "\n".join([
         "[Script Info]", "ScriptType: v4.00+", f"PlayResX: {GEN}", f"PlayResY: {YUK}",
         "WrapStyle: 0", "ScaledBorderAndShadow: yes", "",
@@ -306,7 +378,7 @@ def ass_metni(cizelge, ikilem):
 
 # --- ffmpeg komutları (ilk eleman program adı; çalıştırırken PATH'ten bulunur) ---
 
-def klip_komutu(gorsel, kare, zoom_bas, zoom_bit, cikti, karart=False):
+def klip_komutu(gorsel, kare, zoom_bas, zoom_bit, cikti):
     # Görsel tek kare olarak okunur, bir kez BUYUTME kat büyütülür; zoompan bütün
     # kareleri bu tek kareden üretir (d=kare). Kırpma konumu tam piksele yuvarlandığı
     # için büyütme ne kadar fazlaysa ekrandaki sıçrama o kadar küçük olur (titreme).
@@ -314,10 +386,81 @@ def klip_komutu(gorsel, kare, zoom_bas, zoom_bit, cikti, karart=False):
     vf = (f"scale={GEN * BUYUTME}:{YUK * BUYUTME}:flags=lanczos,"
           f"zoompan=z='{zoom_bas}+({zoom_bit - zoom_bas:.4f})*on/{adim}'"
           f":x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={kare}:s={GEN}x{YUK}:fps={FPS}")
-    if karart:
-        vf += f",colorchannelmixer=rr={KART_KARARTMA}:gg={KART_KARARTMA}:bb={KART_KARARTMA}"
     return ["ffmpeg", "-v", "error", "-y", "-i", gorsel,
             "-vf", vf, "-frames:v", str(kare), *KODLAMA, cikti]
+
+
+def _kose_mesafesi(yaricap):
+    """geq ifadesi: pikselin yuvarlak köşeli dikdörtgen kenarına işaretli uzaklığı → ld(2).
+    İçeride negatif, dışarıda pozitif."""
+    return (f"st(0,abs(X+0.5-W/2)-(W/2-{yaricap}));st(1,abs(Y+0.5-H/2)-(H/2-{yaricap}));"
+            f"st(2,hypot(max(ld(0),0),max(ld(1),0))+min(max(ld(0),ld(1)),0)-{yaricap})")
+
+
+def kutu_filtresi(gen, yuk, yaricap, zemin, kenar=0, kenar_rgb=KART_VURGU_RGB):
+    """Yuvarlak köşeli, yarı saydam (isteğe bağlı kenarlı) kutu üreten tek karelik kaynak."""
+    (r, g, b), alfa = zemin
+    d = _kose_mesafesi(yaricap)
+    kanallar = []
+    for ad, ic, dis in (("r", r, kenar_rgb[0]), ("g", g, kenar_rgb[1]), ("b", b, kenar_rgb[2])):
+        ifade = f"if(gt(ld(2),-{kenar}),{dis},{ic})" if kenar else str(ic)
+        kanallar.append(f"{ad}='{d};{ifade}'")
+    a_ic = f"if(gt(ld(2),-{kenar}),255,{alfa})" if kenar else str(alfa)
+    kanallar.append(f"a='{d};clip(0.5-ld(2),0,1)*{a_ic}'")
+    return f"color=c=black:s={gen}x{yuk}:r=1:d=1,format=rgba,geq={':'.join(kanallar)}"
+
+
+def gorsel_kose_filtresi(boyut, yaricap):
+    """Görseli kare boyuta ölçekleyip köşelerini yuvarlatan filtre zinciri."""
+    d = _kose_mesafesi(yaricap)
+    return (f"scale={boyut}:{boyut}:flags=lanczos,format=rgba,"
+            f"geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='{d};clip(0.5-ld(2),0,1)*255'")
+
+
+def kart_komutu(arka, plan, kare, cikti, zoom=1.0):
+    """Seçim kartı klibi: karartılmış son sahne + yan yana seçenek kartları (sabit kare).
+
+    zoom: son sahne klibinin bittiği zoom; kart aynı kadrajla başlar (sıçrama olmaz).
+    Kart tek kare olarak bir kez birleştirilir, sonra `kare` kadar tekrarlanır. Başta son
+    sahne karartılmadan görünür; KART_GECIKME'de KART_BELIRME süresince kararma, kutular
+    ve görseller birlikte belirir (ASS yazıları da aynı anda). Yazılar burada değil,
+    birleştirmede ASS ile basılır.
+    """
+    gen = round(GEN * zoom / 2) * 2
+    yuk = round(YUK * zoom / 2) * 2
+    k = KART_KARARTMA
+    tekrar = f"loop=loop=-1:size=1,setpts=N/{FPS}/TB"
+    zincir = [f"[0:v]scale={gen}:{yuk}:flags=lanczos,crop={GEN}:{YUK},format=rgba,split[arka][kr]",
+              f"[kr]colorchannelmixer=rr={k}:gg={k}:bb={k}[z0]"]
+    girdiler = ["-i", arka]
+    son, n = "z0", 0
+
+    def bindir(kaynak, x, y):
+        nonlocal son, n
+        n += 1
+        zincir.append(f"[{son}][{kaynak}]overlay={x}:{y}[z{n}]")
+        son = f"z{n}"
+
+    for i, secenek in enumerate(plan[:len(KART_XLER)]):
+        x = KART_XLER[i]
+        zincir.append(f"{kutu_filtresi(KART_GEN, KART_YUK, KART_YARICAP, KART_ZEMIN, KART_KENAR)}"
+                      f"[k{i}]")
+        bindir(f"k{i}", x, KART_Y)
+        if secenek.gorsel is not None:
+            girdiler += ["-i", str(secenek.gorsel)]
+            zincir.append(f"[{len(girdiler) // 2 - 1}:v]"
+                          f"{gorsel_kose_filtresi(KART_GORSEL, KART_GORSEL_YARICAP)}[g{i}]")
+        else:
+            zincir.append(f"{kutu_filtresi(KART_GORSEL, KART_GORSEL, KART_GORSEL_YARICAP, YEDEK_ZEMIN)}"
+                          f"[g{i}]")
+        bindir(f"g{i}", x + KART_IC_PAY, KART_Y + KART_IC_PAY)
+    # Alt katman: karartılmamış son sahne. Üst katman: karartılmış sahne + kartlar; saydamdan
+    # belirerek biner. Bölüm 8'de (kart yok) yalnızca kararma olur.
+    zincir.append(f"[arka]{tekrar}[a]")
+    zincir.append(f"[{son}]{tekrar},fade=t=in:st={KART_GECIKME}:d={KART_BELIRME}:alpha=1[k]")
+    zincir.append("[a][k]overlay=0:0,format=yuv420p[v]")
+    return ["ffmpeg", "-v", "error", "-y", *girdiler, "-filter_complex", ";".join(zincir),
+            "-map", "[v]", "-frames:v", str(kare), *KODLAMA, cikti]
 
 
 def ses_filtresi(cizelge, ilk_girdi):
@@ -375,11 +518,19 @@ def ses_suresi(mp3):
         raise MontajHatasi(f"Ses okunamadı: {mp3} (bozuk olabilir; ses.py ile yeniden üret).") from None
 
 
-def _plan_yazdir(cizelge, tam):
+def _plan_yazdir(cizelge, tam, kart=(), senaryo=""):
     for no, gorsel, bas, kare in cizelge.sahneler:
         adet = sum(1 for c in cizelge.cumleler if c[0].startswith(f"s{no:02d}_"))
         print(f"  Sahne {no:>2}: {gorsel.name:<14} {adet} cümle  {bas:6.2f} sn → {kare / FPS:5.2f} sn")
     print(f"  Kart     : {cizelge.kart_baslangic:6.2f} sn → {cizelge.kart_kare / FPS:5.2f} sn")
+    for k in kart:
+        if k.gorsel is not None:
+            print(f"    {k.harf} · {k.metin}: {k.gorsel.name}")
+        else:
+            print(f"    {k.harf} · {k.metin}: görsel yok, yedek düzen (büyük harf)")
+            if k.tarif:
+                print(f"    Uyarı: secenek_{k.harf}.png yok. Yerleştir: "
+                      f"python kod/gorsel.py {senaryo} --yerlestir secenek{k.harf}")
     print(f"  Toplam   : {cizelge.toplam:.1f} sn")
     if tam and not HEDEF_SURE[0] <= cizelge.toplam <= HEDEF_SURE[1]:
         print(f"  Uyarı: süre hedef aralığın ({HEDEF_SURE[0]}–{HEDEF_SURE[1]} sn) dışında.")
@@ -392,7 +543,8 @@ def montajla(veri, klasor, sahneler, varyantlar, kuru=False, sure_olc=ses_suresi
     girdiler = girdileri_topla(veri, klasor, sahneler, varyantlar)
     sureler = {c.anahtar: sure_olc(c.mp3) for g in girdiler for c in g.cumleler}
     cizelge = zaman_cizelgesi(girdiler, sureler)
-    _plan_yazdir(cizelge, tam)
+    kart = kart_plani(veri["ikilem"], klasor / "gorseller")
+    _plan_yazdir(cizelge, tam, kart, _goster(klasor / "senaryo.json"))
     if kuru:
         return None
 
@@ -407,11 +559,13 @@ def montajla(veri, klasor, sahneler, varyantlar, kuru=False, sure_olc=ses_suresi
             _calistir(klip_komutu(str(gorsel.resolve()), kare, *zoom, ad), is_, f"sahne {no}")
             klipler.append(ad)
         son_gorsel = cizelge.sahneler[-1][1]
-        _calistir(klip_komutu(str(son_gorsel.resolve()), cizelge.kart_kare, KART_ZOOM, KART_ZOOM,
-                              "kart.mp4", karart=True), is_, "kart")
+        kart_mutlak = [k._replace(gorsel=k.gorsel and k.gorsel.resolve()) for k in kart]
+        print("  Seçim kartı…")
+        _calistir(kart_komutu(str(son_gorsel.resolve()), kart_mutlak, cizelge.kart_kare,
+                              "kart.mp4", zoom=zoom[1]), is_, "kart")
         klipler.append("kart.mp4")
         (is_ / "klipler.txt").write_text("".join(f"file '{k}'\n" for k in klipler), encoding="utf-8")
-        (is_ / "altyazi.ass").write_text(ass_metni(cizelge, veri["ikilem"]), encoding="utf-8")
+        (is_ / "altyazi.ass").write_text(ass_metni(cizelge, veri["ikilem"], kart), encoding="utf-8")
         # Font geçici klasöre kopyalanır: filtreye kısa, göreli, sürücü harfsiz yol verilir.
         (is_ / "fontlar").mkdir()
         font = FONT_KLASORU / FONT_DOSYASI

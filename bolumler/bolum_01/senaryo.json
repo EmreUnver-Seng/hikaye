@@ -116,8 +116,14 @@
   "ikilem": {
     "soru": "Teyze kayıp. Zarfı şimdi açacak mısın?",
     "secenekler": {
-      "A": "Zarfı aç",
-      "B": "Söz verdin, açma"
+      "A": {
+        "metin": "Zarfı aç",
+        "gorsel": "Yakın plan, üstten: kalın kahverengi kâğıt zarf açılmış, kapağı yırtılmış; içinden yarısı dışarı çıkmış, katlanmış sararmış bir kâğıt görünüyor. Zarfı tutan, hardal sarısı kapüşon kollu iki genç el. Mor-mavi gece lambası ışığı, arkası karanlık ve bulanık."
+      },
+      "B": {
+        "metin": "Söz verdin, açma",
+        "gorsel": "Yakın plan: kalın kahverengi kâğıt zarf kapalı, kapağında bozulmamış koyu kırmızı mum mühür. Zarf lacivert otobüs koltuğunun üzerinde duruyor, üstünde hardal sarısı kapüşon kollu bir el koruyarak bastırıyor. Mor-mavi gece lambası ışığı, arkası karanlık ve bulanık."
+      }
     }
   }
 }

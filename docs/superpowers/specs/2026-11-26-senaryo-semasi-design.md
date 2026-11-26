@@ -39,13 +39,22 @@ Her bölümün senaryosu `bolumler/bolum_NN/senaryo.json` dosyasında durur. Bu 
 ```
 Mekân (`mekan`, isteğe bağlı ama önerilir): `otobus, tesis, istasyon, dis` (`dis` = otogar, yol gibi gece dış mekânı). Tarifi `hikaye.md`'deki "Mekânlar" ve "Renk paleti" bölümlerinden alınır ve `gorsel.py` tarafından prompt'a eklenir; böylece koltuk rengi gibi ayrıntılar sahne tarifinde yazmasa da tutarlı kalır.
 
+Seçenekler iki biçimde yazılabilir (geriye uyumlu): düz yazı (`"A": "Zarfı aç"`) ya da seçim kartında görsel isteniyorsa nesne:
+```json
+"secenekler": {
+  "A": { "metin": "Zarfı aç", "gorsel": "Açılmış kahverengi zarf, içinden katlanmış kâğıt görünüyor." },
+  "B": "Söz verdin, açma"
+}
+```
+Nesnede `metin` zorunlu, `gorsel` isteğe bağlı; başka alan hata. `gorsel` tarifinden `gorsel.py` kare (1:1) bir Gemini isteği üretir; görsel `gorseller/secenek_A.png` olarak yerleşir ve `montaj.py` seçim kartında kullanır. Diğer modüller `secenek_metni(deger)` / `secenek_gorseli(deger)` yardımcılarıyla okur.
+
 Karakter kimlikleri: `sen, nadide, riza, kerem, murat, ayla` (referans: `karakterler/<kimlik>.png`). Konuşan ayrıca `anlatici` olabilir.
 
 ## Kontroller
 **Hata** (dosya geçersiz):
 - JSON okunamıyor (satır/sütun ile), kök nesne değil, zorunlu alan eksik, tür yanlış, bilinmeyen alan (yazım hatalarını yakalamak için).
 - `bolum` 1–8 arası tam sayı; klasör adı `bolum_NN` ise numarayla eşleşmeli.
-- `baslik`, `gorsel`, `metin`, `soru`, seçenek metinleri boş olamaz.
+- `baslik`, `gorsel`, `metin`, `soru`, seçenek metinleri ve seçenek görsel tarifleri boş olamaz; seçenek yazı ya da `{metin, gorsel}` nesnesi olmalı.
 - 8–12 sahne; `no` 1'den başlayıp sırayla artar.
 - `karakterler` bilinen kimliklerden oluşur, tekrar yok (boş liste olabilir: manzara sahnesi).
 - `cumleler` en az 1 eleman; `konusan` `anlatici` ya da sahnenin `karakterler` listesindeki biri.

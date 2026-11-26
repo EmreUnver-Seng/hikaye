@@ -5,12 +5,15 @@ kullanılmaz). Bu modül:
   1. Her sahne için hazır istek yazar: eklenecek referans görseller + prompt.
   2. İndirilen görselleri sahne3_a/b/c.png adıyla 1080×1920'ye keserek yerleştirir.
   3. Hangi sahnelerin hazır olduğunu gösterir.
+  4. Seçim kartı (ikilem) için seçenek görsellerinin isteğini yazar ve
+     secenek_A.png / secenek_B.png olarak 1080×1080 kare yerleştirir.
 
 Kullanım:
     python kod/gorsel.py bolumler/bolum_01/senaryo.json                  # istekler + durum
     python kod/gorsel.py bolumler/bolum_01/senaryo.json --karakter riza  # karakter sayfası isteği
     python kod/gorsel.py bolumler/bolum_01/senaryo.json --yerlestir 3 [dosya ...]
     python kod/gorsel.py bolumler/bolum_01/senaryo.json --yerlestir riza [dosya]
+    python kod/gorsel.py bolumler/bolum_01/senaryo.json --yerlestir secenekA [dosya]
     python kod/gorsel.py bolumler/bolum_01/senaryo.json --durum
 
 Dosya verilmezse İndirilenler klasöründeki en yeni görseller önerilir.
@@ -26,11 +29,14 @@ from collections import namedtuple
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from senaryo import KARAKTERLER, SenaryoHatasi, senaryo_yukle  # noqa: E402
+from senaryo import (KARAKTERLER, SenaryoHatasi, secenek_gorseli,  # noqa: E402
+                     secenek_metni, senaryo_yukle)
 
 KOK = Path(__file__).resolve().parent.parent
 HARFLER = ("a", "b", "c")
 HEDEF_GEN, HEDEF_YUK = 1080, 1920
+SECENEK_BOYUT = 1080  # seçim kartı görselleri kare: 1080×1080
+SECENEK_HARFLERI = ("A", "B")
 ORAN_TOLERANS = 0.10  # 9:16'dan göreli sapma
 GORSEL_UZANTILARI = {".png", ".jpg", ".jpeg", ".webp"}
 
@@ -167,7 +173,40 @@ def karakter_promptu(karakter, stil_var=False):
     return "\n".join(satirlar)
 
 
+def secenek_promptu(harf, metin, tarif, stil_var=False):
+    """Seçim kartındaki seçenek görselinin prompt'u (kare, tek net an/nesne)."""
+    satirlar = [STIL, SAHNE_ISIK, "Kare 1:1 kompozisyon."]
+    if stil_var:
+        satirlar.append(_stil_satiri(1))
+    satirlar += [
+        f"Bu görsel, bölüm sonundaki seçim kartında '{harf} · {metin}' seçeneğini temsil eder. "
+        "Kartta küçük gösterilecek: tek bir ana nesne ya da an, ortada, büyük ve net; "
+        "sade, karanlık arka plan; kenarlarda biraz boşluk.",
+        f"Görsel: {tarif}",
+        "Görselde harf, yazı veya simge olmasın.",
+        "Bunu 3 farklı görsel olarak, ayrı ayrı üret: kamera açısı ve kompozisyon farklı olsun.",
+    ]
+    return "\n".join(satirlar)
+
+
+def secenek_gorselleri(veri):
+    """İkilemdeki {harf: (metin, görsel tarifi)}; tarifi olmayan seçenekler dahil değil."""
+    secenekler = veri.get("ikilem", {}).get("secenekler") or {}
+    return {h: (secenek_metni(secenekler[h]), secenek_gorseli(secenekler[h]))
+            for h in SECENEK_HARFLERI if h in secenekler and secenek_gorseli(secenekler[h])}
+
+
 # --- Dosya adları ---
+
+def secenek_yolu(klasor, harf):
+    return Path(klasor) / f"secenek_{harf}.png"
+
+
+def secenek_hedefi(metin):
+    """'secenekA' / 'secenek_b' gibi --yerlestir hedefi → 'A'; değilse None."""
+    eslesme = re.fullmatch(r"secenek_?([abAB])", metin)
+    return eslesme.group(1).upper() if eslesme else None
+
 
 def varyant_yolu(klasor, no, harf):
     return Path(klasor) / f"sahne{no}_{harf}.png"
@@ -188,12 +227,16 @@ def hedef_yollar(klasor, no, adet, yeniden):
     return bos[:adet]
 
 
-def oran_uyarisi(gen, yuk):
-    """Kaynak oranı 9:16'dan çok farklıysa uyarı metni, değilse None."""
-    sapma = abs((gen / yuk) / (HEDEF_GEN / HEDEF_YUK) - 1)
+def oran_uyarisi(gen, yuk, hedef=(HEDEF_GEN, HEDEF_YUK)):
+    """Kaynak oranı hedeften (varsayılan 9:16) çok farklıysa uyarı metni, değilse None."""
+    sapma = abs((gen / yuk) / (hedef[0] / hedef[1]) - 1)
     if sapma > ORAN_TOLERANS:
-        return (f"kaynak {gen}×{yuk}, 9:16 değil; kesimde kenarlardan önemli bir kısım "
-                "kaybolacak. Gerekirse Gemini'den dikey (9:16) iste.")
+        if hedef[0] == hedef[1]:
+            oran, istek = "kare (1:1)", "kare (1:1)"
+        else:
+            oran, istek = "9:16", "dikey (9:16)"
+        return (f"kaynak {gen}×{yuk}, {oran} değil; kesimde kenarlardan önemli bir kısım "
+                f"kaybolacak. Gerekirse Gemini'den {istek} iste.")
     return None
 
 
@@ -229,6 +272,12 @@ def istekler_metni(veri, karakterler, kok, mekanlar=None):
             satirlar.append(f"Referans: {', '.join(refler) if refler else 'yok'}")
             satirlar += ["```", sahne_promptu(sahne, karakterler, stil_var, mekanlar), "```"]
         satirlar.append("")
+    for harf, (metin, tarif) in secenek_gorselleri(veri).items():
+        ref = f"karakterler/{STIL_KIMLIK}.png" if stil_var else "yok"
+        satirlar.append(f"## Seçim kartı {harf}")
+        satirlar.append(f"Referans: {ref}. 3 aday üret, en iyisini indir: "
+                        f"`{komut} --yerlestir secenek{harf}`")
+        satirlar += ["```", secenek_promptu(harf, metin, tarif, stil_var), "```", ""]
     return "\n".join(satirlar)
 
 
@@ -239,6 +288,12 @@ def durum_metni(veri, klasor, kok):
         hazir = [h for h in HARFLER if varyant_yolu(klasor, sahne["no"], h).exists()]
         ek = f" ({', '.join(hazir)})" if hazir else ""
         satirlar.append(f"  Sahne {sahne['no']}: {len(hazir)}/{len(HARFLER)}{ek}")
+    tarifli = secenek_gorselleri(veri)
+    for harf in SECENEK_HARFLERI:
+        var = secenek_yolu(klasor, harf).exists()
+        if harf in tarifli or var:
+            ek = "" if harf in tarifli else " (senaryoda tarif yok)"
+            satirlar.append(f"  Seçim kartı {harf}: {'hazır' if var else 'yok'}{ek}")
     kullanilan = sorted({k for s in veri["sahneler"] for k in s["karakterler"]})
     eksik = eksik_referanslar(kullanilan, kok)
     if eksik:
@@ -300,6 +355,15 @@ def sahneye_yerlestir(kaynak, hedef):
               f"scale={HEDEF_GEN}:{HEDEF_YUK}:force_original_aspect_ratio=increase,"
               f"crop={HEDEF_GEN}:{HEDEF_YUK}")
     return oran_uyarisi(gen, yuk)
+
+
+def secenege_yerlestir(kaynak, hedef):
+    """Kaynağı 1080×1080'e ölçekleyip ortadan keser. Oran uyarısını (veya None) döndürür."""
+    gen, yuk = boyut_oku(kaynak)
+    _donustur(kaynak, hedef,
+              f"scale={SECENEK_BOYUT}:{SECENEK_BOYUT}:force_original_aspect_ratio=increase,"
+              f"crop={SECENEK_BOYUT}:{SECENEK_BOYUT}")
+    return oran_uyarisi(gen, yuk, (SECENEK_BOYUT, SECENEK_BOYUT))
 
 
 def karaktere_yerlestir(kaynak, hedef):
@@ -369,6 +433,23 @@ def _karaktere(kimlik, dosyalar, yeniden):
     print(f"✓ {kaynak.name} → karakterler/{kimlik}.png")
 
 
+def _secenege(veri, gorseller, harf, dosyalar, yeniden):
+    if len(dosyalar) > 1:
+        raise GorselHatasi(f"Seçim kartı {harf} için tek dosya ver (en iyi adayı).")
+    if harf not in (veri.get("ikilem", {}).get("secenekler") or {}):
+        raise GorselHatasi(f"Bu bölümün ikileminde {harf} seçeneği yok.")
+    hedef = secenek_yolu(gorseller, harf)
+    if hedef.exists() and not yeniden:
+        raise GorselHatasi(f"{hedef.name} zaten var. Değiştirmek için --yeniden ekle.")
+    kaynak = _dosyalari_sec(dosyalar, 1)[0]
+    uyari = secenege_yerlestir(kaynak, hedef)
+    print(f"✓ {kaynak.name} → {hedef.relative_to(KOK) if hedef.is_relative_to(KOK) else hedef}")
+    if uyari:
+        print(f"  ! {uyari}")
+    if harf not in secenek_gorselleri(veri):
+        print(f"  ! Senaryoda {harf} seçeneğinin görsel tarifi yok; montaj yine de bu görseli kullanır.")
+
+
 def main(argv):
     ayristirici = argparse.ArgumentParser(
         prog="gorsel.py", description="Görsel istekleri hazırlar ve görselleri yerleştirir.")
@@ -376,7 +457,8 @@ def main(argv):
     grup = ayristirici.add_mutually_exclusive_group()
     grup.add_argument("--karakter", metavar="KIMLIK", help="karakter sayfası isteğini göster")
     grup.add_argument("--yerlestir", nargs="+", metavar=("HEDEF", "DOSYA"),
-                      help="sahne numarası veya karakter kimliği, ardından dosyalar")
+                      help="sahne numarası, karakter kimliği ya da secenekA/secenekB, "
+                           "ardından dosyalar")
     grup.add_argument("--durum", action="store_true", help="hazır görselleri göster")
     ayristirici.add_argument("--yeniden", action="store_true",
                              help="var olan görsellerin üzerine yaz")
@@ -397,11 +479,14 @@ def main(argv):
             hedef, dosyalar = args.yerlestir[0], args.yerlestir[1:]
             if hedef.isascii() and hedef.isdecimal():
                 _sahneye(veri, gorseller, int(hedef), dosyalar, args.yeniden)
+            elif secenek_hedefi(hedef):
+                _secenege(veri, gorseller, secenek_hedefi(hedef), dosyalar, args.yeniden)
             elif hedef in KARAKTERLER or hedef == STIL_KIMLIK:
                 _karaktere(hedef, dosyalar, args.yeniden)
             else:
                 raise GorselHatasi(f"Bilinmeyen hedef '{hedef}': sahne numarası, karakter "
-                                   f"kimliği ({', '.join(KARAKTERLER)}) ya da '{STIL_KIMLIK}' olmalı.")
+                                   f"kimliği ({', '.join(KARAKTERLER)}), '{STIL_KIMLIK}' "
+                                   "ya da secenekA/secenekB olmalı.")
             return 0
         if args.durum:
             print(f"Bölüm {veri['bolum']} görselleri ({gorseller}):")

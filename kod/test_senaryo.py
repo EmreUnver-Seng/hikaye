@@ -15,7 +15,8 @@ from pathlib import Path
 KOD = Path(__file__).resolve().parent
 sys.path.insert(0, str(KOD))
 
-from senaryo import SenaryoHatasi, dogrula, senaryo_yukle  # noqa: E402
+from senaryo import (SenaryoHatasi, dogrula, secenek_gorseli, secenek_metni,  # noqa: E402
+                     senaryo_yukle)
 
 
 def gecerli_ornek(bolum=1):
@@ -298,6 +299,46 @@ def test_mekan_gecerli_degerler():
     for m in ("otobus", "tesis", "istasyon", "dis"):
         hatalar, _ = dogrula(bozuk(lambda v, m=m: v["sahneler"][0].update(mekan=m)))
         assert hatalar == [], (m, hatalar)
+
+
+def _gorselli(v, b=None):
+    v["ikilem"]["secenekler"]["A"] = {"metin": "Zarfı aç", "gorsel": "Açılmış zarf"}
+    if b is not None:
+        v["ikilem"]["secenekler"]["B"] = b
+
+
+def test_secenek_nesne_gecerli():
+    hatalar, _ = dogrula(bozuk(lambda v: _gorselli(v, {"metin": "Açma"})))
+    assert hatalar == [], hatalar
+
+
+def test_secenek_nesne_metin_eksik():
+    hata_icerir(bozuk(lambda v: _gorselli(v, {"gorsel": "Zarf"})), "secenekler.B")
+    hata_icerir(bozuk(lambda v: _gorselli(v, {"gorsel": "Zarf"})), "'metin'")
+
+
+def test_secenek_nesne_bos_metin():
+    hata_icerir(bozuk(lambda v: _gorselli(v, {"metin": " "})), "secenekler.B.metin")
+
+
+def test_secenek_nesne_bos_gorsel():
+    hata_icerir(bozuk(lambda v: _gorselli(v, {"metin": "Açma", "gorsel": ""})),
+                "secenekler.B.gorsel")
+
+
+def test_secenek_nesne_bilinmeyen_alan():
+    hata_icerir(bozuk(lambda v: _gorselli(v, {"metin": "Açma", "resim": "x"})), "resim")
+
+
+def test_secenek_sayi_olamaz():
+    hata_icerir(bozuk(lambda v: _gorselli(v, 5)), "secenekler.B")
+
+
+def test_secenek_yardimcilari():
+    assert secenek_metni("Aç") == "Aç" and secenek_gorseli("Aç") is None
+    assert secenek_metni({"metin": "Aç", "gorsel": "zarf"}) == "Aç"
+    assert secenek_gorseli({"metin": "Aç", "gorsel": "zarf"}) == "zarf"
+    assert secenek_gorseli({"metin": "Aç"}) is None
 
 
 if __name__ == "__main__":

@@ -22,6 +22,7 @@ python kod/gorsel.py bolumler/bolum_01/senaryo.json                 # istekleri 
 python kod/gorsel.py bolumler/bolum_01/senaryo.json --karakter riza # karakter sayfası isteği
 python kod/gorsel.py bolumler/bolum_01/senaryo.json --yerlestir 3 [dosya ...]
 python kod/gorsel.py bolumler/bolum_01/senaryo.json --yerlestir riza [dosya]
+python kod/gorsel.py bolumler/bolum_01/senaryo.json --yerlestir secenekA [dosya]
 python kod/gorsel.py bolumler/bolum_01/senaryo.json --durum
 ```
 - **İstekler:** Ekrana ve `gorseller/istekler.md`'ye yazılır. Her sahne: başlık, eklenecek referans dosyaları (sırasıyla), kod bloğunda prompt. Referansı eksik karakter varsa sahne isteği yerine uyarı ve komut yazılır.
@@ -30,8 +31,9 @@ python kod/gorsel.py bolumler/bolum_01/senaryo.json --durum
 - **Prompt:** Sabit stil (2B dijital çizgi film, temiz koyu kontur, iki tonlu gölgelendirme, saç/yüz/kumaşta orta seviye detay, fotogerçekçi değil, dikey 9:16, yazı/altyazı/konuşma balonu yok; sahnelerde loş sinematik ışık, karakter sayfalarında nötr ışık). Her prompt son satırda **3 farklı görsel** ister (sahnede kamera açısı/kompozisyon, karakter sayfasında ifade/duruş farklı; görünüş aynı) + "Ekteki 1. görsel: Sen — <görünüş>" satırları + sahnenin `gorsel` tarifi.
 - **Yerleştirme (sahne):** Dosyalar sahnenin ilk boş harflerine (a, b, c) sırayla yerleşir. Üç harf doluysa hata; `--yeniden` ile a'dan başlayarak üzerine yazılır. ffmpeg ile **1080×1920'ye** ölçeklenip ortadan kesilir. Kaynak oranı 9:16'dan çok farklıysa (>%10) uyarı verilir (kesimde çok şey kaybolur).
 - **Yerleştirme (karakter):** Tek dosya, PNG'ye çevrilir, kesilmez. Var olan referansın üzerine yalnızca `--yeniden` ile yazılır.
+- **Seçim kartı görselleri:** İkilemde `gorsel` tarifi olan her seçenek için `istekler.md`'nin sonuna "## Seçim kartı A/B" bölümü yazılır: referans yalnızca `karakterler/stil.png` (en sonda), prompt **kare 1:1**, tek net nesne/an, karanlık sade arka plan, yazı/harf yok, 3 aday. `--yerlestir secenekA` (veya `secenek_a`) tek dosyayı **1080×1080**'e ölçekleyip ortadan keserek `gorseller/secenek_A.png` yapar; oran kareden >%10 saparsa uyarı. Var olan dosyanın üzerine yalnızca `--yeniden` ile yazılır. Varyant yok: kullanıcı Gemini'de en iyi adayı seçip tek dosya indirir. `montaj.py` kartta bu dosyayı kullanır.
 - **Dosya verilmezse:** İndirilenler klasöründeki (`Path.home() / "Downloads"`) en yeni görseller (gereken sayıda) listelenir ve onay (e/h) istenir.
-- **Durum:** Sahne başına kaç varyant hazır, hangi referanslar eksik.
+- **Durum:** Sahne başına kaç varyant hazır, seçim kartı A/B görseli hazır mı, hangi referanslar eksik.
 
 ## Proje geneline etkiler
 - `CLAUDE.md`: Araçlar, akış (adım 3), klasör yapısı ve yol haritası Gemini API yerine elle üretimi anlatır; Veo çıkar.
