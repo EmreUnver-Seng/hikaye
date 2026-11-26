@@ -17,7 +17,10 @@ KOK = KOD.parent
 sys.path.insert(0, str(KOD))
 
 from montaj import (  # noqa: E402
+    CUMLE_ARASI,
+    CUMLE_SONU_PAYI,
     FONT_ADI,
+    SAHNE_SONU,
     CumleGirdisi,
     MontajHatasi,
     SahneGirdisi,
@@ -183,16 +186,18 @@ def _girdiler():
 def test_zaman_cizelgesi():
     c = zaman_cizelgesi(_girdiler(), {"s01_c1": 1.0, "s01_c2": 2.0, "s02_c1": 1.234})
     kontrol("sahne1 başlangıç", c.sahneler[0][2] == 0.0)
-    kontrol("sahne1 kare (3.5 sn)", c.sahneler[0][3] == 105, c.sahneler[0])
-    kontrol("sahne2 başlangıç", abs(c.sahneler[1][2] - 3.5) < 1e-9, c.sahneler[1])
-    kontrol("sahne2 kare", c.sahneler[1][3] == round((1.234 + 0.35) * 30), c.sahneler[1])
+    kare1 = round((1.0 + CUMLE_ARASI + 2.0 + SAHNE_SONU) * 30)
+    bas2 = kare1 / 30
+    kontrol("sahne1 kare", c.sahneler[0][3] == kare1, c.sahneler[0])
+    kontrol("sahne2 başlangıç", abs(c.sahneler[1][2] - bas2) < 1e-9, c.sahneler[1])
+    kontrol("sahne2 kare", c.sahneler[1][3] == round((1.234 + SAHNE_SONU) * 30), c.sahneler[1])
     bas = {k[0]: k[2] for k in c.cumleler}
-    kontrol("s01_c2 başlangıç", abs(bas["s01_c2"] - 1.15) < 1e-9, bas)
-    kontrol("s02_c1 başlangıç", abs(bas["s02_c1"] - 3.5) < 1e-9, bas)
+    kontrol("s01_c2 başlangıç", abs(bas["s01_c2"] - (1.0 + CUMLE_ARASI)) < 1e-9, bas)
+    kontrol("s02_c1 başlangıç", abs(bas["s02_c1"] - bas2) < 1e-9, bas)
     slot = {k[0]: k[3] for k in c.cumleler}
-    kontrol("slot sonraki cümleye kadar", abs(slot["s01_c1"] - 1.15) < 1e-9, slot)
-    kontrol("sahne son slot sahne bitişi", abs(slot["s01_c2"] - 3.5) < 1e-9, slot)
-    kart = (105 + round(1.584 * 30)) / 30
+    kontrol("slot sonraki cümleye kadar", abs(slot["s01_c1"] - (1.0 + CUMLE_ARASI)) < 1e-9, slot)
+    kontrol("sahne son slot sahne bitişi", abs(slot["s01_c2"] - bas2) < 1e-9, slot)
+    kart = (kare1 + round((1.234 + SAHNE_SONU) * 30)) / 30
     kontrol("kart başlangıç", abs(c.kart_baslangic - kart) < 1e-9, c.kart_baslangic)
     kontrol("kart kare 120", c.kart_kare == 120)
     kontrol("toplam", abs(c.toplam - (kart + 4)) < 1e-9, c.toplam)
@@ -253,7 +258,10 @@ def test_altyazi_olaylari():
                                             kelime("Gece", 1.44, 1.68), kelime("uzun.", 1.76, 2.3)]),
         CumleGirdisi("s01_c2", Path("y"), [kelime("Teyze?", 0.1, 0.6)]),
     ])]
-    c = zaman_cizelgesi(girdiler, {"s01_c1": 2.4, "s01_c2": 0.7})
+    # s01_c1'in sesi 2.0 sn ama son kelime 2.3'te bitiyor (zamanlama tahmini sesi aşabilir):
+    # altyazı yine de cümlenin slotunda (2.0 + CUMLE_ARASI) kesilmeli.
+    c = zaman_cizelgesi(girdiler, {"s01_c1": 2.0, "s01_c2": 0.7})
+    slot1 = 2.0 + CUMLE_ARASI
     olaylar = altyazi_olaylari(c)
     kontrol("olay sayısı = kelime sayısı", len(olaylar) == 5, len(olaylar))
     kontrol("Dialogue satırı", all(o.startswith("Dialogue: ") for o in olaylar))
@@ -261,10 +269,13 @@ def test_altyazi_olaylari():
     kontrol("ilk olay 0'da başlar, Nadide'ye kadar", ",0:00:00.00,0:00:00.36," in olaylar[0], olaylar[0])
     kontrol("grup sonu → sonraki grup başı", ",0:00:00.36,0:00:01.44," in olaylar[1], olaylar[1])
     kontrol("ikinci grup metni", "Gece" in olaylar[2] and "Nadide" not in olaylar[2], olaylar[2])
-    # cümle sonu: bitis 2.3 + 0.3 = 2.6 ama slot 2.55'te bitiyor (2.4 + 0.15)
-    kontrol("cümle sonu slotu aşmaz", ",0:00:01.76,0:00:02.55," in olaylar[3], olaylar[3])
-    # ikinci cümle 2.55'te başlar: 2.55+0.1 → 2.55+0.6+0.3 (sahne sonu 3.6'dan önce)
-    kontrol("ikinci cümle mutlak zaman", ",0:00:02.65,0:00:03.45," in olaylar[4], olaylar[4])
+    son1 = min(2.3 + CUMLE_SONU_PAYI, slot1)
+    kontrol("cümle sonu slotu aşmaz", son1 <= slot1 and
+            f",0:00:01.76,{ass_zaman(son1)}," in olaylar[3], olaylar[3])
+    # ikinci cümle slot1'de başlar: slot1+0.1 → slot1+0.6+0.3
+    kontrol("ikinci cümle mutlak zaman",
+            f",{ass_zaman(slot1 + 0.1)},{ass_zaman(slot1 + 0.6 + CUMLE_SONU_PAYI)}," in olaylar[4],
+            olaylar[4])
 
 
 def test_kart_olaylari():
@@ -344,7 +355,7 @@ def test_uctan_uca():
         sure = float(subprocess.run(
             ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0",
              str(cikti)], capture_output=True, encoding="utf-8").stdout.strip())
-        beklenen = round((0.5 * 2 + 0.15 + 0.35) * 30) / 30 + 4
+        beklenen = round((0.5 * 2 + CUMLE_ARASI + SAHNE_SONU) * 30) / 30 + 4
         kontrol("video süresi", abs(sure - beklenen) < 0.15, f"{sure} != {beklenen}")
         boyut = subprocess.run(
             ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",

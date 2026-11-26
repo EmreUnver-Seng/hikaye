@@ -35,8 +35,9 @@ FONT_ADI = "Montserrat ExtraBold"  # fontun içindeki aile adı
 FONT_KLASORU = KOK / "varliklar" / "fontlar"
 
 GEN, YUK, FPS = 1080, 1920, 30
-CUMLE_ARASI = 0.15   # aynı sahnede cümleler arası sessizlik (sn)
-SAHNE_SONU = 0.35    # sahnenin son cümlesinden sonra (sn)
+CUMLE_ARASI = 0.45   # aynı sahnede cümleler arası sessizlik (sn)
+SAHNE_SONU = 0.7     # sahnenin son cümlesinden sonra (sn)
+BUYUTME = 4          # zoom'dan önce görselin büyütülme katı (titremeyi önler)
 KART_SURESI = 4.0
 ZOOM = 1.08          # tek sahneler 1→ZOOM yakınlaşır, çiftler ZOOM→1 uzaklaşır
 KART_ZOOM = 1.04
@@ -306,13 +307,16 @@ def ass_metni(cizelge, ikilem):
 # --- ffmpeg komutları (ilk eleman program adı; çalıştırırken PATH'ten bulunur) ---
 
 def klip_komutu(gorsel, kare, zoom_bas, zoom_bit, cikti, karart=False):
+    # Görsel tek kare olarak okunur, bir kez BUYUTME kat büyütülür; zoompan bütün
+    # kareleri bu tek kareden üretir (d=kare). Kırpma konumu tam piksele yuvarlandığı
+    # için büyütme ne kadar fazlaysa ekrandaki sıçrama o kadar küçük olur (titreme).
     adim = max(kare - 1, 1)
-    vf = (f"scale={GEN * 2}:{YUK * 2},"
+    vf = (f"scale={GEN * BUYUTME}:{YUK * BUYUTME}:flags=lanczos,"
           f"zoompan=z='{zoom_bas}+({zoom_bit - zoom_bas:.4f})*on/{adim}'"
-          f":x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s={GEN}x{YUK}:fps={FPS}")
+          f":x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={kare}:s={GEN}x{YUK}:fps={FPS}")
     if karart:
         vf += f",colorchannelmixer=rr={KART_KARARTMA}:gg={KART_KARARTMA}:bb={KART_KARARTMA}"
-    return ["ffmpeg", "-v", "error", "-y", "-loop", "1", "-framerate", str(FPS), "-i", gorsel,
+    return ["ffmpeg", "-v", "error", "-y", "-i", gorsel,
             "-vf", vf, "-frames:v", str(kare), *KODLAMA, cikti]
 
 

@@ -43,7 +43,8 @@ python kod/montaj.py bolumler/bolum_01/senaryo.json --kuru             # render 
 - Kare hesabı: her klip `round(süre × 30)` kare; sesin konumları aynı yuvarlanmış sahne başlangıçlarından hesaplanır (görüntü–ses kayması birikmesin).
 
 ## Görüntü
-- Her sahne klibi: görsel 2160×3840'a büyütülür, `zoompan` ile 1080×1920'ye; tek sahneler yakınlaşır (zoom 1,00→1,08), çift sahneler uzaklaşır (1,08→1,00), merkezde. (Önce büyütmek zoom titremesini önler.)
+- Her sahne klibi: görsel tek kare olarak okunur, bir kez 4 kat (4320×7680) büyütülür, `zoompan` (`d=kare`) bütün kareleri bu tek kareden 1080×1920 üretir; tek sahneler yakınlaşır (zoom 1,00→1,08), çift sahneler uzaklaşır (1,08→1,00), merkezde. (`zoompan` kırpma konumunu tam piksele yuvarlar; 2 kat büyütme ilk tam bölümde gözle görülür titreme yaptı, 4 katta sıçrama çeyrek piksele iner.)
+- Cümle arası es 0,45 sn, sahne sonu es 0,7 sn (ilk tam bölümde 0,15/0,35 diyaloglar için fazla hızlı bulundu).
 - Kart klibi: kapsamdaki son sahnenin görseli sabit (zoom 1,04), %60 karartılmış.
 - Kodlama: H.264 (`libx264`, `yuv420p`, CRF 20), ses AAC 192k, `+faststart`.
 
