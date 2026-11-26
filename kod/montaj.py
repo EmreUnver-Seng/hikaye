@@ -27,7 +27,8 @@ from collections import namedtuple
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from senaryo import SenaryoHatasi, secenek_gorseli, secenek_metni, senaryo_yukle  # noqa: E402
+from senaryo import (SenaryoHatasi, kelime_kok, secenek_gorseli, secenek_metni,  # noqa: E402
+                     senaryo_yukle)
 from ses import SesHatasi, dosya_adi, kayitlari_yukle  # noqa: E402
 
 KOK = Path(__file__).resolve().parent.parent
@@ -74,13 +75,33 @@ SORU_ALT_Y = 700                     # soru bu çizgiye alttan dayanır (yukarı
 CAGRI_Y = KART_Y + KART_YUK + 90
 SECENEK_HARFLERI = ("A", "B")
 
+# --- Saat animasyonu (senaryoda sahnenin 'saat' alanı) ---
+SAAT_BOYUT = 420                    # kare katman kenarı (px)
+SAAT_X, SAAT_Y = (GEN - SAAT_BOYUT) // 2, 190   # üst-orta
+SAAT_YARICAP = 196                  # kadran yarıçapı
+SAAT_KENAR = 9                      # hardal sarısı çember kalınlığı
+SAAT_ZEMIN = ((13, 16, 32), 225)    # koyu lacivert, kart zeminiyle aynı ton
+SAAT_MUREKKEP = KART_VURGU_RGB      # çentikler, ibreler, çember
+SAAT_YELKOVAN = (165, 9)            # uzunluk, kalınlık (px)
+SAAT_AKREP = (105, 15)
+SAAT_BELIRME = 0.3                  # başta belirme / sonda kaybolma (sn)
+SAAT_BEKLE = 1.0                    # ibreler durduktan sonra ekranda kalma (sn)
+
 KODLAMA = ["-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p",
            "-r", str(FPS)]
 
 CumleGirdisi = namedtuple("CumleGirdisi", "anahtar mp3 kelimeler")
-SahneGirdisi = namedtuple("SahneGirdisi", "no gorsel cumleler")
+# saat: SaatGirdisi ya da None
+SahneGirdisi = namedtuple("SahneGirdisi", "no gorsel cumleler saat", defaults=(None,))
+# bas_dk: başlangıç (gece yarısından dakika), fark_dk: işaretli dönüş (geri < 0),
+# cumle: 0'dan sıra, kelime_bas: ibrelerin durduğu kelimenin cümle içindeki başlangıcı (sn)
+SaatGirdisi = namedtuple("SaatGirdisi", "bas_dk fark_dk cumle kelime_bas es")
+# Sahne klibine göre (0 = sahne başı): durus = ibrelerin durduğu an, sure = katman süresi
+SaatPlani = namedtuple("SaatPlani", "bas_dk fark_dk durus sure")
 # sahneler: (no, gorsel, baslangic, kare); cumleler: (anahtar, mp3, baslangic, slot_bitis, kelimeler)
-Cizelge = namedtuple("Cizelge", "sahneler cumleler kart_baslangic kart_kare toplam")
+# saatler: {sahne no: SaatPlani}
+Cizelge = namedtuple("Cizelge", "sahneler cumleler kart_baslangic kart_kare toplam saatler",
+                     defaults=({},))
 # Seçim kartındaki bir seçenek: gorsel = secenek_X.png yolu ya da None (yedek düzen);
 # tarif = senaryodaki görsel tarifi var mı (yoksa eksik görsel için uyarı verilmez).
 KartSecenegi = namedtuple("KartSecenegi", "harf metin gorsel tarif")
@@ -187,10 +208,36 @@ def girdileri_topla(veri, klasor, sahneler, varyantlar):
             cumleler.append(CumleGirdisi(anahtar, mp3, kelimeler))
         if ses_sorunu:
             hatalar.append(f"Sahne {no} seslerini üret: python kod/ses.py {senaryo} --sahne {no}")
-        girdiler.append(SahneGirdisi(no, gorsel, cumleler))
+        saat = None
+        if "saat" in sahne and not ses_sorunu:
+            saat = saat_girdisi(sahne["saat"], cumleler[sahne["saat"]["cumle"] - 1].kelimeler)
+            if saat is None:
+                hatalar.append(f"Sahne {no}, saat: '{sahne['saat']['kelime']}' kelimesi "
+                               f"zamanlama.json'da bulunamadı (cümle {sahne['saat']['cumle']}).")
+        girdiler.append(SahneGirdisi(no, gorsel, cumleler, saat))
     if hatalar:
         raise MontajHatasi(hatalar)
     return girdiler
+
+
+def _dakika(metin):
+    ss, dd = metin.split(":")
+    return int(ss) * 60 + int(dd)
+
+
+def saat_girdisi(saat, kelimeler):
+    """Senaryodaki 'saat' alanı + cümlenin kelime zamanlamaları → SaatGirdisi.
+
+    İbreler, cümlede `kelime` ile eşleşen ilk kelimenin başlangıcında durur; kelime
+    zamanlamalarda yoksa None.
+    """
+    aranan = kelime_kok(saat["kelime"])
+    bulunan = next((k for k in kelimeler if kelime_kok(k["kelime"]) == aranan), None)
+    if bulunan is None:
+        return None
+    bas, bit = _dakika(saat["bas"]), _dakika(saat["bit"])
+    fark = (bit - bas) % 1440 if saat["yon"] == "ileri" else -((bas - bit) % 1440)
+    return SaatGirdisi(bas, fark, saat["cumle"] - 1, bulunan["baslangic"], saat.get("es", 0))
 
 
 # --- Zaman çizelgesi ---
@@ -201,11 +248,11 @@ def zaman_cizelgesi(girdiler, sureler):
     Sahne süresi kareye yuvarlanır; sahne başlangıçları önceki karelerin
     toplamından hesaplanır, böylece ses ile görüntü arasında kayma birikmez.
     """
-    sahneler, cumleler = [], []
+    sahneler, cumleler, saatler = [], [], {}
     kare_toplam = 0
     for g in girdiler:
         bas = kare_toplam / FPS
-        ofsetler, t = [], 0.0
+        ofsetler, t = [], (g.saat.es if g.saat else 0.0)
         for c in g.cumleler:
             ofsetler.append(t)
             t += sureler[c.anahtar] + CUMLE_ARASI
@@ -216,10 +263,15 @@ def zaman_cizelgesi(girdiler, sureler):
             slot = bas + ofsetler[j + 1] if j + 1 < len(ofsetler) else bitis
             cumleler.append((c.anahtar, c.mp3, bas + ofsetler[j], slot, c.kelimeler))
         sahneler.append((g.no, g.gorsel, bas, kare))
+        if g.saat:
+            durus = ofsetler[g.saat.cumle] + g.saat.kelime_bas
+            sure = min(durus + SAAT_BEKLE + SAAT_BELIRME, kare / FPS)
+            saatler[g.no] = SaatPlani(g.saat.bas_dk, g.saat.fark_dk, durus, sure)
         kare_toplam += kare
     kart_kare = round(KART_SURESI * FPS)
     kart_bas = kare_toplam / FPS
-    return Cizelge(sahneler, cumleler, kart_bas, kart_kare, (kare_toplam + kart_kare) / FPS)
+    return Cizelge(sahneler, cumleler, kart_bas, kart_kare, (kare_toplam + kart_kare) / FPS,
+                   saatler)
 
 
 # --- Altyazı ---
@@ -378,7 +430,54 @@ def ass_metni(cizelge, ikilem, plan=None):
 
 # --- ffmpeg komutları (ilk eleman program adı; çalıştırırken PATH'ten bulunur) ---
 
-def klip_komutu(gorsel, kare, zoom_bas, zoom_bit, cikti):
+def saat_filtresi(plan):
+    """Saydam zeminli, SAAT_BOYUT kare analog saat katmanı (ffmpeg kaynak + geq).
+
+    Sahne başında belirir; ibreler plan.bas_dk'dan başlayıp plan.fark_dk kadar döner
+    (yavaşlayarak, ease-out) ve plan.durus anında durur; SAAT_BEKLE sonra kaybolur.
+    T = katmanın zamanı (sahne başı 0). Her piksel için ld(5)=mürekkep (ibre, çentik,
+    çember), ld(6)=kadran içi (kenarda yumuşatılmış).
+    """
+    m = SAAT_BOYUT / 2
+    durus = max(plan.durus, 1 / FPS)
+    ilerleme = f"(1-pow(1-clip(T/{durus:.4f},0,1),3))"
+    dakika = f"({plan.bas_dk}+({plan.fark_dk})*{ilerleme})"
+    sure = plan.sure
+
+    def ibre(aci, uzunluk, kalinlik):
+        # (dx,dy) noktasının, merkezden aci yönüne (12'den saat yönünde) uzanan çizgiye uzaklığı
+        s = f"clip(ld(0)*sin({aci})-ld(1)*cos({aci}),-14,{uzunluk})"
+        return f"clip({kalinlik / 2}+0.5-hypot(ld(0)-{s}*sin({aci}),ld(1)+{s}*cos({aci})),0,1)"
+
+    a_yelkovan = f"(2*PI*{dakika}/60)"
+    a_akrep = f"(2*PI*{dakika}/720)"
+    r = SAAT_YARICAP
+    # Çentik: en yakın saat çizgisine açısal uzaklık × yarıçap; 12-3-6-9 daha uzun ve kalın
+    aci = "atan2(ld(0),-ld(1))"
+    delta = f"(mod({aci}+2*PI+PI/12,PI/6)-PI/12)"
+    ceyrek = f"lt(mod(floor(({aci}+2*PI+PI/12)/(PI/6)),3),0.5)"
+    ic = f"if({ceyrek},{r - 52},{r - 34})"
+    kalin = f"if({ceyrek},5,3)"
+    centik = (f"clip({kalin}+0.5-ld(2)*abs({delta}),0,1)"
+              f"*clip(ld(2)-{ic}+0.5,0,1)*clip({r - 18}+0.5-ld(2),0,1)")
+    cember = f"clip(ld(2)-({r}-{SAAT_KENAR})+0.5,0,1)"
+    merkez = "clip(13.5-ld(2),0,1)"
+    on = (f"st(0,X+0.5-{m});st(1,Y+0.5-{m});st(2,hypot(ld(0),ld(1)));"
+          f"st(5,max(max(max({ibre(a_yelkovan, *SAAT_YELKOVAN)},{ibre(a_akrep, *SAAT_AKREP)}),"
+          f"max({centik},{cember})),{merkez}));"
+          f"st(6,clip({r}+0.5-ld(2),0,1))")
+    (zr, zg, zb), zalfa = SAAT_ZEMIN
+    kanallar = [f"{ad}='{on};{z}+({mk}-{z})*ld(5)'"
+                for ad, z, mk in (("r", zr, SAAT_MUREKKEP[0]), ("g", zg, SAAT_MUREKKEP[1]),
+                                  ("b", zb, SAAT_MUREKKEP[2]))]
+    solma = f"clip(T/{SAAT_BELIRME},0,1)*clip(({sure:.4f}-T)/{SAAT_BELIRME},0,1)"
+    kanallar.append(f"a='{on};{solma}*ld(6)*({zalfa}+({255 - zalfa})*ld(5))'")
+    return (f"color=c=black:s={SAAT_BOYUT}x{SAAT_BOYUT}:r={FPS}:d={sure:.4f},format=rgba,"
+            f"geq={':'.join(kanallar)}")
+
+
+def klip_komutu(gorsel, kare, zoom_bas, zoom_bit, cikti, saat=None):
+    """saat: SaatPlani verilirse saat katmanı sahnenin üstüne bindirilir."""
     # Görsel tek kare olarak okunur, bir kez BUYUTME kat büyütülür; zoompan bütün
     # kareleri bu tek kareden üretir (d=kare). Kırpma konumu tam piksele yuvarlandığı
     # için büyütme ne kadar fazlaysa ekrandaki sıçrama o kadar küçük olur (titreme).
@@ -386,8 +485,13 @@ def klip_komutu(gorsel, kare, zoom_bas, zoom_bit, cikti):
     vf = (f"scale={GEN * BUYUTME}:{YUK * BUYUTME}:flags=lanczos,"
           f"zoompan=z='{zoom_bas}+({zoom_bit - zoom_bas:.4f})*on/{adim}'"
           f":x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={kare}:s={GEN}x{YUK}:fps={FPS}")
-    return ["ffmpeg", "-v", "error", "-y", "-i", gorsel,
-            "-vf", vf, "-frames:v", str(kare), *KODLAMA, cikti]
+    if saat is None:
+        return ["ffmpeg", "-v", "error", "-y", "-i", gorsel,
+                "-vf", vf, "-frames:v", str(kare), *KODLAMA, cikti]
+    zincir = (f"[0:v]{vf}[arka];{saat_filtresi(saat)}[saat];"
+              f"[arka][saat]overlay={SAAT_X}:{SAAT_Y}:eof_action=pass,format=yuv420p[v]")
+    return ["ffmpeg", "-v", "error", "-y", "-i", gorsel, "-filter_complex", zincir,
+            "-map", "[v]", "-frames:v", str(kare), *KODLAMA, cikti]
 
 
 def _kose_mesafesi(yaricap):
@@ -464,10 +568,16 @@ def kart_komutu(arka, plan, kare, cikti, zoom=1.0):
 
 
 def ses_filtresi(cizelge, ilk_girdi):
-    """Cümle seslerini slotlarına göre sessizlikle uzatıp ardına kart sessizliğini ekler."""
+    """Cümle seslerini bir sonrakinin başına kadar sessizlikle uzatıp ardına kart sessizliğini
+    ekler. Sahne başında es varsa (saat) sessizlik önceki cümleye, ilk sahnedeyse başa eklenir."""
     parcalar, etiketler = [], []
-    for k, (_a, _m, bas, slot, _k) in enumerate(cizelge.cumleler):
-        uzunluk = slot - bas
+    baslar = [c[2] for c in cizelge.cumleler] + [cizelge.kart_baslangic]
+    if baslar[0] > 0:
+        parcalar.append(f"anullsrc=r=44100:cl=mono,atrim=duration={baslar[0]:.6f},"
+                        f"aformat=sample_fmts=fltp:channel_layouts=mono[bas]")
+        etiketler.append("[bas]")
+    for k, _c in enumerate(cizelge.cumleler):
+        uzunluk = baslar[k + 1] - baslar[k]
         parcalar.append(f"[{ilk_girdi + k}:a]aresample=44100,"
                         f"aformat=sample_fmts=fltp:channel_layouts=mono,"
                         f"apad=whole_dur={uzunluk:.6f},atrim=end={uzunluk:.6f}[a{k}]")
@@ -476,7 +586,7 @@ def ses_filtresi(cizelge, ilk_girdi):
     parcalar.append(f"anullsrc=r=44100:cl=mono,atrim=duration={cizelge.kart_kare / FPS:.6f},"
                     f"aformat=sample_fmts=fltp:channel_layouts=mono[a{n}]")
     etiketler.append(f"[a{n}]")
-    parcalar.append(f"{''.join(etiketler)}concat=n={n + 1}:v=0:a=1[ses]")
+    parcalar.append(f"{''.join(etiketler)}concat=n={len(etiketler)}:v=0:a=1[ses]")
     return ";".join(parcalar)
 
 
@@ -522,6 +632,12 @@ def _plan_yazdir(cizelge, tam, kart=(), senaryo=""):
     for no, gorsel, bas, kare in cizelge.sahneler:
         adet = sum(1 for c in cizelge.cumleler if c[0].startswith(f"s{no:02d}_"))
         print(f"  Sahne {no:>2}: {gorsel.name:<14} {adet} cümle  {bas:6.2f} sn → {kare / FPS:5.2f} sn")
+        if no in cizelge.saatler:
+            s = cizelge.saatler[no]
+            bit = (s.bas_dk + s.fark_dk) % 1440
+            print(f"           saat {s.bas_dk // 60:02d}:{s.bas_dk % 60:02d} → "
+                  f"{bit // 60:02d}:{bit % 60:02d} ({'ileri' if s.fark_dk > 0 else 'geri'}), "
+                  f"{bas + s.durus:6.2f} sn'de durur")
     print(f"  Kart     : {cizelge.kart_baslangic:6.2f} sn → {cizelge.kart_kare / FPS:5.2f} sn")
     for k in kart:
         if k.gorsel is not None:
@@ -556,7 +672,8 @@ def montajla(veri, klasor, sahneler, varyantlar, kuru=False, sure_olc=ses_suresi
             zoom = (1.0, ZOOM) if no % 2 else (ZOOM, 1.0)
             ad = f"klip{i:02d}.mp4"
             print(f"  Sahne {no} klibi…")
-            _calistir(klip_komutu(str(gorsel.resolve()), kare, *zoom, ad), is_, f"sahne {no}")
+            _calistir(klip_komutu(str(gorsel.resolve()), kare, *zoom, ad,
+                                  saat=cizelge.saatler.get(no)), is_, f"sahne {no}")
             klipler.append(ad)
         son_gorsel = cizelge.sahneler[-1][1]
         kart_mutlak = [k._replace(gorsel=k.gorsel and k.gorsel.resolve()) for k in kart]

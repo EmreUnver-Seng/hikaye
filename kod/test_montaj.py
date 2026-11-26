@@ -23,9 +23,14 @@ from montaj import (  # noqa: E402
     SAHNE_SONU,
     KART_XLER,
     KART_Y,
+    SAAT_BOYUT,
+    SAAT_X,
+    SAAT_Y,
     CumleGirdisi,
     KartSecenegi,
     MontajHatasi,
+    SaatGirdisi,
+    SaatPlani,
     SahneGirdisi,
     altyazi_olaylari,
     ass_kacir,
@@ -40,6 +45,8 @@ from montaj import (  # noqa: E402
     klip_komutu,
     montajla,
     sahne_secimi,
+    saat_filtresi,
+    saat_girdisi,
     satirlara_bol,
     ses_filtresi,
     varyant_secimi,
@@ -387,6 +394,71 @@ def test_komutlar():
     kontrol("birleştirme ass", "ass=altyazi.ass:fontsdir=../../varliklar/fontlar" in bm, bm)
     kontrol("birleştirme mutlak yol yok", ":\\" not in bm and "C:" not in bm, bm)
     kontrol("birleştirme kodlama", "libx264" in b and "aac" in b and "+faststart" in b)
+
+
+# --- Saat animasyonu ---
+
+SAAT_GERI = {"bas": "02:45", "bit": "23:30", "yon": "geri", "cumle": 1, "kelime": "23:30"}
+
+
+def test_saat_girdisi():
+    kelimeler = [kelime("saat", 2.96, 3.28), kelime("23:30.", 3.36, 4.48)]
+    g = saat_girdisi(SAAT_GERI, kelimeler)
+    kontrol("saat başlangıç dakika", g.bas_dk == 165, g)
+    kontrol("geri: gece yarısını geçen fark", g.fark_dk == -195, g)
+    kontrol("kelime noktalamasız eşleşir", g.kelime_bas == 3.36, g)
+    kontrol("cümle sırası 0'dan", g.cumle == 0 and g.es == 0, g)
+    ileri = saat_girdisi({"bas": "23:30", "bit": "03:00", "yon": "ileri", "cumle": 1,
+                          "kelime": "üç", "es": 1.5}, [kelime("Saat", 0, 0.4), kelime("Üç.", 0.48, 1)])
+    kontrol("ileri fark", ileri.fark_dk == 210 and ileri.es == 1.5, ileri)
+    kontrol("büyük harf eşleşir", ileri.kelime_bas == 0.48, ileri)
+    kontrol("kelime yoksa None", saat_girdisi(SAAT_GERI, [kelime("saat", 0, 1)]) is None)
+
+
+def test_saat_cizelge():
+    saat = SaatGirdisi(165, -195, 1, 0.5, 1.5)
+    girdiler = [_girdiler()[0], _girdiler()[1]._replace(saat=saat._replace(cumle=0))]
+    c = zaman_cizelgesi(girdiler, {"s01_c1": 1.0, "s01_c2": 2.0, "s02_c1": 1.0})
+    bas2 = c.sahneler[1][2]
+    kontrol("es cümleyi öteler", abs(c.cumleler[2][2] - (bas2 + 1.5)) < 1e-9, c.cumleler)
+    kontrol("es sahneyi uzatır", c.sahneler[1][3] == round((1.5 + 1.0 + SAHNE_SONU) * 30))
+    p = c.saatler[2]
+    kontrol("duruş = es + kelime", abs(p.durus - 2.0) < 1e-9, p)
+    kontrol("katman süresi sahneyi aşmaz", p.sure <= c.sahneler[1][3] / 30 + 1e-9, p)
+    kontrol("saatsiz sahne planda yok", 1 not in c.saatler)
+    f = ses_filtresi(c, 1)
+    kontrol("es: önceki cümle sonraki başlangıca kadar uzar",
+            f"whole_dur={c.cumleler[2][2] - c.cumleler[1][2]:.6f}" in f, f)
+
+    ilk = [_girdiler()[0]._replace(saat=SaatGirdisi(0, 60, 0, 0.2, 1.0))]
+    c1 = zaman_cizelgesi(ilk, {"s01_c1": 1.0, "s01_c2": 1.0})
+    f1 = ses_filtresi(c1, 1)
+    kontrol("ilk sahnede es: başta sessizlik", "[bas]" in f1 and "duration=1.000000" in f1
+            and "concat=n=4" in f1, f1)
+
+
+def test_saat_komutu():
+    plan = SaatPlani(165, -195, 3.36, 4.66)
+    f = saat_filtresi(plan)
+    kontrol("saat katmanı boyutu", f"s={SAAT_BOYUT}x{SAAT_BOYUT}" in f, f)
+    kontrol("saat süresi", "d=4.6600" in f, f)
+    kontrol("ibre zamana bağlı", "T/3.3600" in f and "(165+(-195)*" in f, f)
+    kontrol("saydam kenar", "a='" in f, f)
+    k = klip_komutu("g.png", 120, 1.0, 1.08, "klip.mp4", saat=plan)
+    km = " ".join(k)
+    kontrol("saatli klip filter_complex", "-filter_complex" in k and "-vf" not in k, k)
+    kontrol("saat üst-ortada", f"overlay={SAAT_X}:{SAAT_Y}:eof_action=pass" in km, km)
+    kontrol("saatli klip zoompan", "zoompan" in km and k[k.index("-frames:v") + 1] == "120")
+
+    veri = ornek_veri()
+    veri["sahneler"][1]["saat"] = {**SAAT_GERI, "kelime": "yok"}
+    with tempfile.TemporaryDirectory() as tmp:
+        klasor = sahte_bolum(tmp, veri)
+        hata_bekle("saat kelimesi zamanlamada yok",
+                   lambda: girdileri_topla(veri, klasor, [1, 2], {}), ["Sahne 2, saat", "'yok'"])
+        veri["sahneler"][1]["saat"]["kelime"] = "Sahne"
+        g = girdileri_topla(veri, klasor, [1, 2], {})
+        kontrol("saat girdisi toplanır", g[1].saat is not None and g[0].saat is None, g)
 
 
 # --- Task 3: uçtan uca (ffmpeg varsa) ---

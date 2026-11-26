@@ -70,6 +70,15 @@ python kod/montaj.py bolumler/bolum_01/senaryo.json --kuru             # render 
 
 **Yapım:** Kutular ffmpeg `color` kaynağı + `geq` ile çizilir: her piksel için yuvarlak köşeli dikdörtgene işaretli uzaklık hesaplanır (alfa kenarda yumuşatılır, kenar çizgisi aynı uzaklıktan). Görsellerin köşeleri aynı yöntemle saydamlaştırılır. Hepsi `overlay` ile tek kareye bindirilir. Yazılar ASS'de (`Soru`, `Kart`, `Harf`, `Not` stilleri) birleştirme sırasında basılır; böylece font ve kontur altyazıyla aynı kalır. `kart_plani`, `kart_olaylari`, `kart_komutu`, `satirlara_bol` ffmpeg'siz test edilir.
 
+## Saat animasyonu (senaryoda sahnenin `saat` alanı)
+İlk tam bölümden sonra kullanıcı isteğiyle eklendi: Bölüm 1 sahne 2'de ("Üç saat önce… saat 23:30") zamanın geri, sahne 8'de ("Saat üç.") ileri gittiğini gösteren analog saat. Alan şeması: `2026-11-26-senaryo-semasi-design.md`.
+
+- **Görünüm (kullanıcı onayladı):** Analog; koyu lacivert kadran (~%88 opak), hardal sarısı çember, 12 çentik (12-3-6-9 uzun/kalın), akrep ve yelkovan. 420×420 px katman, üst-ortada (x=330, y=190).
+- **Zamanlama:** Sahne başında 0,3 sn'de belirir; ibreler `bas` saatinden `yon` yönünde dönüp (yavaşlayarak, ease-out kübik) senaryodaki `kelime`nin `zamanlama.json`'daki başlangıcında `bit` saatinde durur; 1 sn bekler, 0,3 sn'de kaybolur (sahne bitişini geçmez). Kelime zamanlamada bulunamazsa montaj hatası.
+- **Es:** `es` saniye kadar sahnenin başına sessizlik eklenir (sahne uzar). Sahne 8'de "üç" 0,5. saniyede söylendiği için `es: 1,5`: saat sessizlikte döner. Ses filtresi artık her cümleyi bir sonraki cümlenin başına kadar uzatır (es önceki sahnenin sesine eklenir; ilk sahnedeyse başa sessizlik).
+- **Yapım:** `saat_filtresi` ffmpeg `color` kaynağı + `geq` ile her karede çizer (ibre açısı `T`'ye bağlı; ibre = noktanın doğru parçasına uzaklığı, çentik = açısal uzaklık × yarıçap, kenarlar yumuşatılır). `klip_komutu(..., saat=SaatPlani)` saatli sahnede `filter_complex` ile zoompan çıktısının üstüne `overlay` eder. `saat_girdisi`, `zaman_cizelgesi` (`Cizelge.saatler`), `saat_filtresi`, `klip_komutu` ffmpeg'siz test edilir.
+- **Bilinen:** Sahne 8'de saat tabelanın üst kısmını kapatıyor; kullanıcı böyle onayladı. Gerekirse ileride sahne başına konum alanı eklenebilir.
+
 ## Ses
 Tek `filter_complex`: her mp3 `aresample=44100`, sonuna slotuna kadar sessizlik (`apad=whole_dur`), kart için 4 sn sessizlik; hepsi `concat`. Toplam ses süresi = video süresi.
 

@@ -39,6 +39,12 @@ Her bölümün senaryosu `bolumler/bolum_NN/senaryo.json` dosyasında durur. Bu 
 ```
 Mekân (`mekan`, isteğe bağlı ama önerilir): `otobus, tesis, istasyon, dis` (`dis` = otogar, yol gibi gece dış mekânı). Tarifi `hikaye.md`'deki "Mekânlar" ve "Renk paleti" bölümlerinden alınır ve `gorsel.py` tarafından prompt'a eklenir; böylece koltuk rengi gibi ayrıntılar sahne tarifinde yazmasa da tutarlı kalır.
 
+Saat animasyonu (`saat`, sahnede isteğe bağlı): zamanın geri/ileri gittiğini gösteren analog saat (`montaj.py`).
+```json
+"saat": { "bas": "02:45", "bit": "23:30", "yon": "geri", "cumle": 1, "kelime": "23:30", "es": 0 }
+```
+`bas`/`bit` `SS:DD` (aynı olamaz), `yon` `geri`/`ileri` (gece yarısını geçen aralığın yönünü belirler), `cumle` sahnedeki cümlenin sırası (1'den), `kelime` o cümlede geçmeli (noktalama ve büyük/küçük harf yok sayılır; ibreler bu kelimenin söylendiği anda durur), `es` isteğe bağlı 0–5 sn: sahne başına eklenen sessizlik (ilk kelime saatin dönmesine yetmeyecek kadar erkense).
+
 Seçenekler iki biçimde yazılabilir (geriye uyumlu): düz yazı (`"A": "Zarfı aç"`) ya da seçim kartında görsel isteniyorsa nesne:
 ```json
 "secenekler": {

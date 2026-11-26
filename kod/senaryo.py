@@ -30,7 +30,11 @@ SON_BOLUM = 8  # finalde seçenek yok, yalnızca soru
 
 KOK_ALANLAR = {"bolum", "baslik", "sahneler", "ikilem"}
 SAHNE_ALANLARI = {"no", "gorsel", "karakterler", "cumleler"}
-SAHNE_ISTEGE_BAGLI = {"mekan"}  # yoksa uyarı verilir
+SAHNE_ISTEGE_BAGLI = {"mekan", "saat"}  # 'mekan' yoksa uyarı verilir; 'saat' isteğe bağlı
+SAAT_ALANLARI = {"bas", "bit", "yon", "cumle", "kelime"}  # sahnedeki saat animasyonu
+SAAT_ISTEGE_BAGLI = {"es"}
+SAAT_YONLERI = ("geri", "ileri")
+SAAT_ES_EN_COK = 5  # sahne başına eklenebilecek sessizlik (sn)
 CUMLE_ALANLARI = {"konusan", "metin"}
 IKILEM_ALANLARI = {"soru", "secenekler"}
 SECENEK_ALANLARI = {"metin", "gorsel"}  # seçenek nesne yazılırsa; 'gorsel' isteğe bağlı
@@ -193,6 +197,8 @@ def _sahne_dogrula(d, sahne, i):
                 sahnedekiler.add(kimlik)
 
     sen, kelime = 0, 0
+    if "saat" in sahne:
+        _saat_dogrula(d, sahne["saat"], sahne.get("cumleler"), f"{konum}, saat")
     if "cumleler" in sahne and d.liste(sahne["cumleler"], f"{konum}, cumleler"):
         if not sahne["cumleler"]:
             d.hata(f"{konum}, cumleler", "en az bir cümle olmalı.")
@@ -220,6 +226,59 @@ def _sahne_dogrula(d, sahne, i):
                     d.uyari(f"{c_konum}, metin", f"cümle {n} kelime; altyazıya sığması için "
                                                 f"en fazla {CUMLE_KELIME_SINIRI} önerilir.")
     return sen, kelime
+
+
+def kelime_kok(kelime):
+    """Kelime karşılaştırması için: baştaki/sondaki noktalama atılır, Türkçe küçük harf."""
+    kelime = kelime.strip(".,;:!?…\"'«»“”‘’()-")
+    return kelime.replace("İ", "i").replace("I", "ı").lower()
+
+
+def _saat_dakika(metin):
+    """'SS:DD' → gece yarısından itibaren dakika; biçim yanlışsa None."""
+    if not isinstance(metin, str):
+        return None
+    eslesme = re.fullmatch(r"([01]\d|2[0-3]):([0-5]\d)", metin)
+    return int(eslesme.group(1)) * 60 + int(eslesme.group(2)) if eslesme else None
+
+
+def _saat_dogrula(d, saat, cumleler, konum):
+    if not d.nesne(saat, konum, SAAT_ALANLARI, SAAT_ALANLARI | SAAT_ISTEGE_BAGLI):
+        return
+    dakikalar = []
+    for alan in ("bas", "bit"):
+        if alan in saat:
+            dk = _saat_dakika(saat[alan])
+            if dk is None:
+                d.hata(f"{konum}, {alan}", f"SS:DD biçiminde saat olmalı (ör. \"23:30\"), "
+                                           f"{saat[alan]!r} yazılmış.")
+            dakikalar.append(dk)
+    if len(dakikalar) == 2 and None not in dakikalar and dakikalar[0] == dakikalar[1]:
+        d.hata(konum, "başlangıç ve bitiş saati aynı; saat dönmez.")
+    if "yon" in saat and saat["yon"] not in SAAT_YONLERI:
+        d.hata(f"{konum}, yon", f"{', '.join(SAAT_YONLERI)} olmalı, {saat['yon']!r} yazılmış.")
+    if "es" in saat:
+        es = saat["es"]
+        if (not isinstance(es, (int, float)) or isinstance(es, bool)
+                or not 0 <= es <= SAAT_ES_EN_COK):
+            d.hata(f"{konum}, es", f"0 ile {SAAT_ES_EN_COK} arasında saniye olmalı, "
+                                   f"{es!r} yazılmış.")
+    if "cumle" not in saat or not isinstance(cumleler, list):
+        return
+    no = saat["cumle"]
+    if not isinstance(no, int) or isinstance(no, bool) or not 1 <= no <= len(cumleler):
+        d.hata(f"{konum}, cumle", f"sahnedeki bir cümlenin sırası olmalı (1–{len(cumleler)}), "
+                                  f"{no!r} yazılmış.")
+        return
+    cumle = cumleler[no - 1]
+    if not isinstance(saat.get("kelime"), str) or not isinstance(cumle, dict)             or not isinstance(cumle.get("metin"), str):
+        if "kelime" in saat and not isinstance(saat["kelime"], str):
+            d.hata(f"{konum}, kelime", "yazı olmalı.")
+        return
+    aranan = kelime_kok(saat["kelime"])
+    if not aranan or aranan not in [kelime_kok(k) for k in cumle["metin"].split()]:
+        d.hata(f"{konum}, kelime", f"'{saat['kelime']}' kelimesi {no}. cümlede yok "
+                                   f"(\"{cumle['metin']}\").")
 
 
 def _ikilem_dogrula(d, ikilem, bolum):

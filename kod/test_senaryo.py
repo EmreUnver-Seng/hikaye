@@ -341,6 +341,72 @@ def test_secenek_yardimcilari():
     assert secenek_gorseli({"metin": "Aç"}) is None
 
 
+# --- Saat animasyonu (sahne, isteğe bağlı) ---------------------------------
+
+def _saatli(degisiklik=None, sil=None):
+    """Sahne 2'ye geçerli bir 'saat' ekler; değişiklik/silme uygulanır."""
+    def d(v):
+        saat = {"bas": "02:45", "bit": "23:30", "yon": "geri", "cumle": 2, "kelime": "iyi."}
+        saat.update(degisiklik or {})
+        for alan in sil or ():
+            del saat[alan]
+        v["sahneler"][1]["saat"] = saat
+    return bozuk(d)
+
+
+def test_saat_gecerli():
+    hatalar, uyarilar = dogrula(_saatli())
+    assert not hatalar, hatalar
+    assert not any("saat" in u for u in uyarilar), uyarilar
+    assert not dogrula(_saatli({"es": 1.5, "kelime": "Bu", "cumle": 2}))[0]
+
+
+def test_saat_kelime_noktalamasiz_ve_buyuk_harf_eslesir():
+    assert not dogrula(_saatli({"kelime": "İYİ"}))[0]
+    assert not dogrula(_saatli({"cumle": 1, "kelime": "otobüs"}))[0]
+
+
+def test_saat_eksik_alan():
+    hata_icerir(_saatli(sil=["yon"]), "'yon' alanı eksik")
+
+
+def test_saat_bilinmeyen_alan():
+    hata_icerir(_saatli({"hiz": 2}), "bilinmeyen alan")
+
+
+def test_saat_bicimi():
+    hata_icerir(_saatli({"bas": "2:45"}), "saat, bas")
+    hata_icerir(_saatli({"bit": "24:00"}), "SS:DD")
+    hata_icerir(_saatli({"bas": 245}), "saat, bas")
+
+
+def test_saat_ayni():
+    hata_icerir(_saatli({"bit": "02:45"}), "aynı")
+
+
+def test_saat_yon():
+    hata_icerir(_saatli({"yon": "sola"}), "geri, ileri")
+
+
+def test_saat_cumle_yok():
+    hata_icerir(_saatli({"cumle": 3}), "cumle")
+    hata_icerir(_saatli({"cumle": True}), "cumle")
+
+
+def test_saat_kelime_cumlede_yok():
+    hata_icerir(_saatli({"kelime": "tesis"}), "'tesis' kelimesi")
+
+
+def test_saat_es():
+    hata_icerir(_saatli({"es": -1}), "saat, es")
+    hata_icerir(_saatli({"es": 9}), "saat, es")
+    hata_icerir(_saatli({"es": "1"}), "saat, es")
+
+
+def test_saat_nesne_olmali():
+    hata_icerir(bozuk(lambda v: v["sahneler"][0].__setitem__("saat", "02:45")), "saat")
+
+
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")
     testler = [(ad, f) for ad, f in sorted(globals().items()) if ad.startswith("test_")]

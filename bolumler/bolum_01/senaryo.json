@@ -17,6 +17,7 @@
       "mekan": "dis",
       "gorsel": "Gece otogarı, 23:30. Peronda üzerinde sarı yıldız logosu olan lacivert şehirlerarası otobüs, ön camında 'Gece Yıldızı Turizm'. Hardal sarısı kapüşonlu genç, sırt çantasıyla otobüsün açık kapısına yürüyor. Sodyum lamba turuncusu ışık.",
       "karakterler": ["sen"],
+      "saat": { "bas": "02:45", "bit": "23:30", "yon": "geri", "cumle": 1, "kelime": "23:30" },
       "cumleler": [
         { "konusan": "anlatici", "metin": "Üç saat önce. Gece Yıldızı Turizm, saat 23:30." },
         { "konusan": "anlatici", "metin": "Koltuk 12, cam kenarı. Uzun bir gece seni bekliyor." }
@@ -78,6 +79,7 @@
       "mekan": "tesis",
       "gorsel": "Gece tesisi dışarıdan: 'Kuşkonmaz Tesisleri' tabelası, soluk yeşilimsi floresan ışıklı, neredeyse boş lokanta. Otoparkta lacivert otobüs, yolcular inmiş, silüet hâlinde.",
       "karakterler": [],
+      "saat": { "bas": "23:30", "bit": "03:00", "yon": "ileri", "cumle": 1, "kelime": "üç", "es": 1.5 },
       "cumleler": [
         { "konusan": "anlatici", "metin": "Saat üç. Kuşkonmaz Tesisleri. On beş dakika mola." }
       ]
