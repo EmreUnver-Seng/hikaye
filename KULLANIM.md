@@ -63,6 +63,34 @@ cd "/Users/emre/Desktop/hikaye is"
 git status                                 # neler değişti?
 ```
 
+## Cihaz değiştirirken
+- **Kalkmadan önce:** commit + push (Claude'a "gönder" de).
+- **Oturunca:** `git pull`.
+- İki cihazda aynı anda değişiklik yapma.
+- `.env` git'te yoktur: anahtarlar şifre yöneticisinde (Apple Şifreler) dursun.
+- Üretilen medya (`bolumler/`) git'te yoktur: iCloud Drive'daki `hikaye-medya` klasörüne yedekle. Proje klasörünün tamamını iCloud'a koyma.
+
+## Windows'ta ilk kurulum (bir kez)
+PowerShell'de, sırayla:
+```powershell
+winget install Git.Git GitHub.cli astral-sh.uv Gyan.FFmpeg Microsoft.VisualStudioCode
+```
+Terminali kapatıp aç (PATH yenilensin), sonra:
+```powershell
+gh auth login
+gh repo clone <kullanıcı-adın>/hikaye "$HOME\Desktop\hikaye"
+cd "$HOME\Desktop\hikaye"
+uv venv --python 3.12
+uv pip install -r requirements.txt
+[Environment]::SetEnvironmentVariable("PYTHONUTF8", "1", "User")
+```
+- `.env` dosyasını oluştur: `.env.example`'ı kopyala, anahtarları şifre yöneticisinden yapıştır.
+- Git kimliği: `git config user.name "Emre"` ve GitHub noreply e-postası.
+- Kontrol: `.venv\Scripts\python kod\test_anahtarlar.py`
+- Claude masaüstü uygulamasını kur, Code sekmesinde bu klasörü aç, kenar çubuğuna aynı üç bölümü (Planlama / Kod / Bölümler) ekle.
+
+**Mac ↔ Windows farkı:** Python yolu Mac'te `.venv/bin/python`, Windows'ta `.venv\Scripts\python`.
+
 ## Limitler
 - **Pro:** Claude Code ve claude.ai aynı limiti paylaşır (yaklaşık 5 saatte bir yenilenir). Kodlama ile üretimi aynı pencereye yığma.
 - **ElevenLabs (ücretsiz):** ayda 10.000 karakter ≈ 5–8 bölüm. Ay ortasında kontrol et.

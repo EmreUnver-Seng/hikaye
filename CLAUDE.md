@@ -4,7 +4,14 @@ Instagram/TikTok için yapay zekâ çizimli, yapay zekâ seslendirmeli, seçmeli
 Her bölüm bir ikilemle biter; izleyici yorum veya anketle seçer, kazanan seçim bir sonraki bölümün girdisi olur.
 
 İletişim dili: **Türkçe**. Geliştirici: 3. sınıf yazılım mühendisliği öğrencisi.
-Platform: **macOS (Apple Silicon)**.
+Platform: **macOS (Apple Silicon)** ana cihaz + **Windows** ikinci cihaz. Proje GitHub üzerinden iki cihazda sürdürülür.
+
+### Çapraz platform kuralları (kod yazarken uy)
+- Yollar her zaman `pathlib.Path` ile kurulur; elle `/` veya `\` birleştirilmez, sabit mutlak yol yazılmaz.
+- Dosyalar her zaman `encoding="utf-8"` ile açılır (Windows varsayılanı UTF-8 değil).
+- Dış programlar (`ffmpeg`) PATH'ten bulunur: `shutil.which("ffmpeg")`.
+- Altyazı fontu sistem klasöründen değil, projedeki `varliklar/fontlar/` klasöründen yüklenir (Mac ve Windows font yolları farklı).
+- `subprocess` çağrılarında komut liste olarak verilir, `shell=True` kullanılmaz.
 
 ## Alınmış kararlar
 - **Araçlar:** Claude (senaryo; **API kullanılmaz**, Claude Code üzerinden Pro aboneliğiyle), Gemini (görsel; isteğe bağlı Veo ile kısa klip), ElevenLabs (seslendirme; istenirse efekt ve müzik).
