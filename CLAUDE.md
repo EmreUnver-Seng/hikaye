@@ -41,11 +41,14 @@ hikaye-projesi/
 
 ## Yol haritası
 - [x] **Aşama 0:** Python 3.12 (`.venv`, uv ile), ffmpeg, `.env` (Gemini + ElevenLabs), `.gitignore`. Kontrol: `.venv/bin/python kod/test_anahtarlar.py`
-- [ ] **1.** `hikaye.md` şablonu + senaryo JSON şeması + `senaryo.py` (şema doğrulama). ← **SIRADAKİ ADIM**
+- [ ] **Hikâye planı** (Planlama oturumu, kodla paralel): tür, dünya, karakterler, ana olay örgüsü, dallanmalar → `hikaye.md`. ← **SIRADAKİ ADIM**
+- [ ] **1.** Senaryo JSON şeması + `senaryo.py` (şema doğrulama). `hikaye.md` şablonu hazır.
 - [ ] **2.** `gorsel.py`: sahne başına 3 varyant, karakter referanslarıyla.
 - [ ] **3.** `ses.py`: cümle bazlı TTS + zaman damgaları, sabit ses ID'si.
 - [ ] **4.** `montaj.py`: 9:16, yavaş zoom, altyazı, müzik, seçenek kartı.
 - [ ] **5.** `yeni_bolum.py`: orkestrasyon ve kontrol noktaları.
+
+Oturum düzeni (ayrıntı: `KULLANIM.md`): **Planlama** = hikâye kararları, **Kod** = pipeline modülleri, **Bölümler** = bölüm başına üretim.
 
 İlke: Her modül tek başına çalışmalı ve test edilebilmeli. Önce bir bölümü baştan sona çıkaran basit bir sürüm kurulacak, sonra geliştirilecek.
 
