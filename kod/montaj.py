@@ -87,6 +87,13 @@ SAAT_AKREP = (105, 15)
 SAAT_BELIRME = 0.3                  # başta belirme / sonda kaybolma (sn)
 SAAT_BEKLE = 1.0                    # ibreler durduktan sonra ekranda kalma (sn)
 
+# --- Ambiyans: sahnenin 'mekan'ına göre varliklar/ambiyans/<mekan>.mp3 döngüsü ---
+AMBIYANS_KLASORU = KOK / "varliklar" / "ambiyans"
+AMBIYANS_DB = -12      # dosyalar ~-24 LUFS'a ayarlı; videoda anlatımın çok altında kalır
+AMBIYANS_GECIS = 0.6   # mekân değişince iki sesin birbirine geçiş süresi (sn)
+# Konuşma sırasında ambiyansı kısar (sidechain ducking)
+AMBIYANS_KISMA = "sidechaincompress=threshold=0.03:ratio=3:attack=40:release=500"
+
 KODLAMA = ["-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p",
            "-r", str(FPS)]
 
@@ -105,6 +112,8 @@ Cizelge = namedtuple("Cizelge", "sahneler cumleler kart_baslangic kart_kare topl
 # Seçim kartındaki bir seçenek: gorsel = secenek_X.png yolu ya da None (yedek düzen);
 # tarif = senaryodaki görsel tarifi var mı (yoksa eksik görsel için uyarı verilmez).
 KartSecenegi = namedtuple("KartSecenegi", "harf metin gorsel tarif")
+# Bir ambiyans parçası: aynı mekândaki ardışık sahneler tek parça; bas/bit video üzerinde (sn)
+Ambiyans = namedtuple("Ambiyans", "mekan dosya bas bit")
 
 
 class MontajHatasi(Exception):
@@ -590,13 +599,85 @@ def ses_filtresi(cizelge, ilk_girdi):
     return ";".join(parcalar)
 
 
-def birlestirme_komutu(liste, mp3ler, ass, fontlar, filtre_ses, cikti):
+def ambiyans_plani(veri, cizelge, klasor=AMBIYANS_KLASORU):
+    """Sahnelerin 'mekan'ından ambiyans parçaları ve uyarılar.
+
+    Ardışık aynı mekânlı sahneler birleşir; son parça kartı da kapsar (kartta söner).
+    Mekânı yazılmamış sahne sessiz kalır; dosyası olmayan mekân için uyarı verilir.
+    """
+    mekanlar = {s["no"]: s.get("mekan") for s in veri["sahneler"]}
+    parcalar, uyarilar = [], []
+    for no, _gorsel, bas, kare in cizelge.sahneler:
+        bit = bas + kare / FPS
+        mekan = mekanlar.get(no)
+        dosya = Path(klasor) / f"{mekan}.mp3" if mekan else None
+        if dosya is not None and not dosya.is_file():
+            uyari = f"Ambiyans yok: {_goster(dosya)} ('{mekan}' sahneleri sessiz kalır)."
+            if uyari not in uyarilar:
+                uyarilar.append(uyari)
+            dosya = None
+        if dosya is None:
+            continue
+        if parcalar and parcalar[-1].mekan == mekan and abs(parcalar[-1].bit - bas) < 1e-6:
+            parcalar[-1] = parcalar[-1]._replace(bit=bit)
+        else:
+            parcalar.append(Ambiyans(mekan, dosya, bas, bit))
+    if parcalar and abs(parcalar[-1].bit - cizelge.kart_baslangic) < 1e-6:
+        parcalar[-1] = parcalar[-1]._replace(bit=cizelge.toplam)
+    return parcalar, uyarilar
+
+
+def ambiyans_filtresi(parcalar, ilk_girdi, toplam):
+    """Ambiyans parçalarını yerlerine koyup [amb] (stereo, video boyu) üretir.
+
+    Her girdi döngüyle (-stream_loop -1) açılır; parça dosyanın kendi video zamanındaki
+    yerinden kesilir (aynı mekân tekrar gelince baştan başlamasın). Komşu parçalar
+    AMBIYANS_GECIS kadar üst üste biner ve çapraz geçer; kartta son parça yavaşça söner.
+    """
+    if not parcalar:
+        return ""
+    yari = AMBIYANS_GECIS / 2
+    satirlar, etiketler = [], []
+    for i, p in enumerate(parcalar):
+        bas = max(p.bas - yari, 0.0)
+        bit = min(p.bit + yari, toplam)
+        uzunluk = bit - bas
+        sonme = KART_SURESI if abs(p.bit - toplam) < 1e-6 else AMBIYANS_GECIS
+        sonme = min(sonme, uzunluk)
+        gecikme = round(bas * 1000)
+        satirlar.append(
+            f"[{ilk_girdi + i}:a]atrim=start={bas:.6f}:duration={uzunluk:.6f},asetpts=PTS-STARTPTS,"
+            f"aresample=44100,aformat=sample_fmts=fltp:channel_layouts=stereo,"
+            f"volume={AMBIYANS_DB}dB,afade=t=in:st=0:d={min(AMBIYANS_GECIS, uzunluk):.3f},"
+            f"afade=t=out:st={uzunluk - sonme:.6f}:d={sonme:.3f},"
+            f"adelay=delays={gecikme}:all=1[m{i}]")
+        etiketler.append(f"[m{i}]")
+    satirlar.append(f"{''.join(etiketler)}amix=inputs={len(etiketler)}:normalize=0:duration=longest,"
+                    f"apad=whole_dur={toplam:.6f},atrim=end={toplam:.6f}[amb]")
+    return ";".join(satirlar)
+
+
+def karisim_filtresi():
+    """[ses] (anlatım, mono) + [amb] → [son] (stereo). Konuşurken ambiyans kısılır."""
+    return ("[ses]aformat=sample_fmts=fltp:channel_layouts=stereo,asplit[ses1][ses2];"
+            f"[amb][ses2]{AMBIYANS_KISMA}[ambk];"
+            "[ses1][ambk]amix=inputs=2:normalize=0:duration=first[son]")
+
+
+def birlestirme_komutu(liste, mp3ler, ass, fontlar, filtre_ses, cikti, ambiyanslar=()):
     """Klipleri uç uca ekler, altyazıyı yakar, sesi bağlar. ass/fontlar göreli olmalı
-    (Windows'ta 'C:' filtre sözdizimini bozar)."""
+    (Windows'ta 'C:' filtre sözdizimini bozar). ambiyanslar verilirse filtre_ses [amb]'ı da
+    üretmeli; girdileri mp3'lerden sonra döngüyle eklenir ve sesle karıştırılır."""
     girdiler = [p for m in mp3ler for p in ("-i", m)]
+    girdiler += [p for a in ambiyanslar for p in ("-stream_loop", "-1", "-i", a)]
+    filtre = f"[0:v]ass={ass}:fontsdir={fontlar}[v];{filtre_ses}"
+    cikis = "[ses]"
+    if ambiyanslar:
+        filtre += ";" + karisim_filtresi()
+        cikis = "[son]"
     return ["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", liste, *girdiler,
-            "-filter_complex", f"[0:v]ass={ass}:fontsdir={fontlar}[v];{filtre_ses}",
-            "-map", "[v]", "-map", "[ses]", *KODLAMA, "-c:a", "aac", "-b:a", "192k",
+            "-filter_complex", filtre,
+            "-map", "[v]", "-map", cikis, *KODLAMA, "-c:a", "aac", "-b:a", "192k",
             "-movflags", "+faststart", cikti]
 
 
@@ -652,7 +733,8 @@ def _plan_yazdir(cizelge, tam, kart=(), senaryo=""):
         print(f"  Uyarı: süre hedef aralığın ({HEDEF_SURE[0]}–{HEDEF_SURE[1]} sn) dışında.")
 
 
-def montajla(veri, klasor, sahneler, varyantlar, kuru=False, sure_olc=ses_suresi):
+def montajla(veri, klasor, sahneler, varyantlar, kuru=False, sure_olc=ses_suresi,
+             ambiyans_klasoru=AMBIYANS_KLASORU):
     """Videoyu üretir ve yolunu döndürür; kuru=True ise yalnızca planı yazar (None)."""
     klasor = Path(klasor)
     tam = list(sahneler) == _sahne_nolari(veri)
@@ -661,6 +743,11 @@ def montajla(veri, klasor, sahneler, varyantlar, kuru=False, sure_olc=ses_suresi
     cizelge = zaman_cizelgesi(girdiler, sureler)
     kart = kart_plani(veri["ikilem"], klasor / "gorseller")
     _plan_yazdir(cizelge, tam, kart, _goster(klasor / "senaryo.json"))
+    ambiyans, uyarilar = ambiyans_plani(veri, cizelge, ambiyans_klasoru)
+    for p in ambiyans:
+        print(f"  Ambiyans : {p.mekan:<9} {p.bas:6.2f} → {p.bit:6.2f} sn")
+    for u in uyarilar:
+        print(f"  Uyarı: {u}")
     if kuru:
         return None
 
@@ -691,8 +778,12 @@ def montajla(veri, klasor, sahneler, varyantlar, kuru=False, sure_olc=ses_suresi
         shutil.copy2(font, is_ / "fontlar" / FONT_DOSYASI)
         mp3ler = [str(c[1].resolve()) for c in cizelge.cumleler]
         print("  Birleştiriliyor…")
-        _calistir(birlestirme_komutu("klipler.txt", mp3ler, "altyazi.ass", "fontlar",
-                                     ses_filtresi(cizelge, 1), "cikti.mp4"), is_, "birleştirme")
+        filtre_ses = ses_filtresi(cizelge, 1)
+        if ambiyans:
+            filtre_ses += ";" + ambiyans_filtresi(ambiyans, 1 + len(mp3ler), cizelge.toplam)
+        _calistir(birlestirme_komutu("klipler.txt", mp3ler, "altyazi.ass", "fontlar", filtre_ses,
+                                     "cikti.mp4", [str(p.dosya.resolve()) for p in ambiyans]),
+                  is_, "birleştirme")
         try:
             (is_ / "cikti.mp4").replace(hedef)
         except OSError as e:

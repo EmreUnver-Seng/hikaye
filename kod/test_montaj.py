@@ -32,7 +32,10 @@ from montaj import (  # noqa: E402
     SaatGirdisi,
     SaatPlani,
     SahneGirdisi,
+    Ambiyans,
     altyazi_olaylari,
+    ambiyans_filtresi,
+    ambiyans_plani,
     ass_kacir,
     ass_metni,
     ass_zaman,
@@ -467,6 +470,58 @@ def _uret(komut):
     subprocess.run(komut, check=True, capture_output=True)
 
 
+def _ambiyans_cizelgesi():
+    girdiler = [SahneGirdisi(n, Path(f"g{n}.png"), [CumleGirdisi(f"s{n:02d}_c1", Path("x"), [])])
+                for n in (1, 2, 3, 4)]
+    return zaman_cizelgesi(girdiler, {f"s{n:02d}_c1": 1.0 for n in (1, 2, 3, 4)})
+
+
+def test_ambiyans_plani():
+    c = _ambiyans_cizelgesi()
+    veri = ornek_veri(sahne_sayisi=4)
+    for s, mekan in zip(veri["sahneler"], ("dis", "otobus", "otobus", "tesis")):
+        s["mekan"] = mekan
+    with tempfile.TemporaryDirectory() as tmp:
+        for m in ("dis", "otobus"):
+            (Path(tmp) / f"{m}.mp3").write_bytes(b"mp3")
+        parcalar, uyarilar = ambiyans_plani(veri, c, tmp)
+        kontrol("ambiyans: ardışık aynı mekân birleşir",
+                [p.mekan for p in parcalar] == ["dis", "otobus"], parcalar)
+        s = c.sahneler
+        kontrol("ambiyans: otobüs 2. sahne başından 3. sahne sonuna",
+                abs(parcalar[1].bas - s[1][2]) < 1e-9
+                and abs(parcalar[1].bit - (s[2][2] + s[2][3] / 30)) < 1e-9, parcalar)
+        kontrol("ambiyans: dosyası olmayan mekân uyarı", len(uyarilar) == 1 and "tesis" in uyarilar[0],
+                uyarilar)
+        (Path(tmp) / "tesis.mp3").write_bytes(b"mp3")
+        parcalar, uyarilar = ambiyans_plani(veri, c, tmp)
+        kontrol("ambiyans: son parça kartı kapsar", abs(parcalar[-1].bit - c.toplam) < 1e-9, parcalar)
+        kontrol("ambiyans: dosyalar tamsa uyarı yok", uyarilar == [])
+        del veri["sahneler"][0]["mekan"]
+        parcalar, _ = ambiyans_plani(veri, c, tmp)
+        kontrol("ambiyans: mekânsız sahne sessiz", parcalar[0].mekan == "otobus", parcalar)
+
+
+def test_ambiyans_filtresi():
+    kontrol("ambiyans filtresi boş", ambiyans_filtresi([], 5, 10.0) == "")
+    parcalar = [Ambiyans("dis", Path("dis.mp3"), 0.0, 4.0), Ambiyans("otobus", Path("o.mp3"), 4.0, 12.0)]
+    f = ambiyans_filtresi(parcalar, 5, 12.0)
+    kontrol("ambiyans girdileri 5 ve 6", "[5:a]" in f and "[6:a]" in f, f)
+    kontrol("ambiyans ikinci parça gecikmeli", "adelay=delays=3700:all=1" in f, f)
+    kontrol("ambiyans ikinci parça kendi yerinden kesilir", "atrim=start=3.700000" in f, f)
+    kontrol("ambiyans kartta 4 sn söner", "d=4.000" in f, f)
+    kontrol("ambiyans karışım", "amix=inputs=2:normalize=0" in f and f.endswith("[amb]"), f)
+    kontrol("ambiyans video boyu", "atrim=end=12.000000[amb]" in f, f)
+    b = birlestirme_komutu("klipler.txt", ["a.mp3"], "altyazi.ass", "fontlar", "X", "c.mp4",
+                           ["dis.mp3"])
+    kontrol("birleştirme döngülü girdi", b[b.index("dis.mp3") - 3:b.index("dis.mp3")] ==
+            ["-stream_loop", "-1", "-i"], b)
+    kontrol("birleştirme karışım çıkışı", b[b.index("-map", b.index("-map") + 1) + 1] == "[son]", b)
+    kontrol("birleştirme ducking", "sidechaincompress" in " ".join(b))
+    b = birlestirme_komutu("klipler.txt", ["a.mp3"], "altyazi.ass", "fontlar", "X", "c.mp4")
+    kontrol("ambiyanssız çıkış [ses]", "[ses]" in b and "sidechaincompress" not in " ".join(b))
+
+
 def test_uctan_uca():
     ffmpeg = shutil.which("ffmpeg")
     if not ffmpeg or not shutil.which("ffprobe"):
@@ -509,6 +564,25 @@ def test_uctan_uca():
         shutil.rmtree(cikti)
         kontrol("kuru çalışma video üretmez", montajla(veri, klasor, [1, 2], {}, kuru=True) is None
                 and not (klasor / "video.mp4").exists())
+
+        # ambiyanslı: 2 sn'lik ses dosyası döngüyle ~6 sn'lik videoyu doldurur, çıktı stereo
+        amb = Path(tmp) / "ambiyans"
+        amb.mkdir()
+        _uret([ffmpeg, "-v", "error", "-y", "-f", "lavfi", "-i", "sine=frequency=220:duration=2",
+               "-c:a", "libmp3lame", str(amb / "otobus.mp3")])
+        veri["sahneler"][1]["mekan"] = "otobus"
+        cikti = montajla(veri, klasor, [2], {}, ambiyans_klasoru=amb)
+        bilgi = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries",
+             "stream=channels:format=duration", "-of", "csv=p=0", str(cikti)],
+            capture_output=True, encoding="utf-8").stdout.split()
+        kontrol("ambiyanslı video stereo", bilgi[0].strip(",") == "2", bilgi)
+        kontrol("ambiyanslı video süresi", abs(float(bilgi[-1]) - beklenen) < 0.15, bilgi)
+        hacim = subprocess.run(
+            [ffmpeg, "-v", "info", "-ss", "4.5", "-t", "1", "-i", str(cikti), "-af", "volumedetect",
+             "-f", "null", "-"], capture_output=True, encoding="utf-8", errors="replace").stderr
+        kontrol("ambiyans kartta da duyulur", "mean_volume: -91" not in hacim and "mean_volume" in hacim,
+                hacim[-300:])
 
 
 if __name__ == "__main__":

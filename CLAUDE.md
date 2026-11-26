@@ -41,7 +41,7 @@ hikaye-projesi/
 ├── .env                  # ELEVENLABS_API_KEY (git'e EKLENMEZ)
 ├── hikaye.md             # dünya, ton, karakter tarifleri, ana olay örgüsü, dallanma noktaları
 ├── durum.json            # bölüm özetleri + kazanan seçimler
-├── varliklar/fontlar/   # altyazı fontu (Montserrat ExtraBold, OFL)
+├── varliklar/            # fontlar/ (altyazı fontu, OFL), ambiyans/ (mekân döngüleri, CC0)
 ├── karakterler/          # referans görseller (karakter sayfaları) + sesler.json (konuşan → ElevenLabs ses ID)
 ├── bolumler/bolum_01/    # senaryo.json, gorseller/, sesler/, video.mp4
 └── kod/
@@ -58,7 +58,7 @@ hikaye-projesi/
 - [x] **1.** Senaryo JSON şeması + `senaryo.py` (şema doğrulama). Şema: `docs/superpowers/specs/2026-11-26-senaryo-semasi-design.md`. Kontrol: `python kod/senaryo.py bolumler/bolum_01/senaryo.json`, testler: `python kod/test_senaryo.py`. Diğer modüller `senaryo_yukle(yol)` kullanır.
 - [x] **2.** `gorsel.py`: sahne başına 3 varyant, karakter referanslarıyla + stil örneği `karakterler/stil.png` (elle üretim, API yok). Tasarım: `docs/superpowers/specs/2026-11-26-gorsel-design.md`. Kontrol: `python kod/gorsel.py bolumler/bolum_01/senaryo.json --durum`, testler: `python kod/test_gorsel.py`.
 - [x] **3.** `ses.py`: cümle bazlı TTS (ElevenLabs `eleven_v4`) + kelime zamanlamaları (`sesler/zamanlama.json`). Konuşan → ses eşlemesi `karakterler/sesler.json` (ücretsiz planda yalnızca hazır sesler; dinlenerek seçildi). Tasarım: `docs/superpowers/specs/2026-11-26-ses-design.md`. Kontrol: `python kod/ses.py bolumler/bolum_01/senaryo.json --kuru`, testler: `python kod/test_ses.py`.
-- [x] **4.** `montaj.py`: 1080×1920, sahne başına yavaş zoom, kelime vurgulu altyazı (font `varliklar/fontlar/`), sonda seçenek kartı; müzik/ambiyans yok. Görsel varyantı varsayılan `a`, `--varyant 3=b`. Tasarım: `docs/superpowers/specs/2026-11-26-montaj-design.md`. Kontrol: `python kod/montaj.py bolumler/bolum_01/senaryo.json --sahne 3` (→ `onizleme.mp4`; tam bölüm → `video.mp4`), testler: `python kod/test_montaj.py`.
+- [x] **4.** `montaj.py`: 1080×1920, sahne başına yavaş zoom, kelime vurgulu altyazı (font `varliklar/fontlar/`), sonda seçenek kartı; müzik yok. Ambiyans: sahnenin `mekan`ına göre `varliklar/ambiyans/<mekan>.mp3` döngüsü (freesound CC0, kaynaklar `KAYNAKLAR.md`; yeni kayıt `kod/ambiyans_hazirla.py` ile hazırlanır), konuşurken kısılır. Görsel varyantı varsayılan `a`, `--varyant 3=b`. Tasarım: `docs/superpowers/specs/2026-11-26-montaj-design.md`. Kontrol: `python kod/montaj.py bolumler/bolum_01/senaryo.json --sahne 3` (→ `onizleme.mp4`; tam bölüm → `video.mp4`), testler: `python kod/test_montaj.py`.
 - [ ] **5.** `yeni_bolum.py`: orkestrasyon ve kontrol noktaları (varyant seçimi dahil). ← **SIRADAKİ ADIM**
 
 Oturum düzeni (ayrıntı: `KULLANIM.md`): **Planlama** = hikâye kararları, **Kod** = pipeline modülleri, **Bölümler** = bölüm başına üretim.
@@ -71,4 +71,4 @@ Kullanıcı yeni bir cihazda **"oturum düzenini kur"** derse: `KULLANIM.md` →
 - Gerçekçi yapay zekâ içeriği TikTok'ta "AI-generated" olarak etiketlenmeli.
 - Ana olay örgüsü önceden planlanır, seçimler ayrıntıları değiştirir. Böylece hikâye dağılmaz.
 - Güncel model adlarını ve SDK sürümlerini kodu yazmadan önce resmi dokümanlardan doğrula.
-- **Ambiyans sesi (hatırlat):** Bölüm 1 ilk kez baştan sona `video.mp4` olarak çıktığında kullanıcıya ambiyans (ör. otobüs/retarder sesi) kararını hatırlat: montaja mı eklenecek, platformda mı; kaynak ElevenLabs ses efekti (kredi) mi, ücretsiz kütüphane mi.
+- **Ambiyans:** Döngüler freesound CC0 gerçek kayıtlarından (kredi harcamaz). Tek seferlik efektler (retarder, kapı, gerilim vurgusu) ileride ElevenLabs ses efektiyle eklenebilir (kredi harcar; henüz yapılmadı). `istasyon` mekânının ambiyansı yok (Bölüm 6'dan önce eklenmeli; yoksa o sahneler uyarıyla sessiz kalır).
