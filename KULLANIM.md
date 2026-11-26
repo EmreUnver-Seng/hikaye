@@ -56,6 +56,8 @@ Konu değişirse aynı sohbette devam etme, yeni oturum aç.
 - [ ] Yeni bir karakter ilk kez konuşacaksa: önce kısa bir dinleme denemesiyle ses seç, `karakterler/sesler.json`'a ekle
 - [ ] `python kod/ses.py bolumler/bolum_NN/senaryo.json --kuru` → kaç karakter harcanacak, kota yetiyor mu?
 - [ ] `python kod/ses.py bolumler/bolum_NN/senaryo.json` → onayla (e), sesleri dinle; beğenmediğin cümle için `--cumle S.C` (ör. `--cumle 3.2`)
+- [ ] `python kod/montaj.py bolumler/bolum_NN/senaryo.json --sahne 3` → tek sahne önizlemesi (`onizleme.mp4`); beğenmediğin görsel için `--varyant 3=b`
+- [ ] `python kod/montaj.py bolumler/bolum_NN/senaryo.json --varyant 3=b,5=c` → tam bölüm (`video.mp4`). Önce `--kuru` ile süreyi gör.
 - [ ] `python kod/yeni_bolum.py N` → görsel seç, sesleri dinle
 - [ ] Videoyu telefonda izle
 - [ ] Yükle: **AI etiketi** + anket
