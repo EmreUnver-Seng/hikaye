@@ -2,6 +2,9 @@
 
 Her sahne yavaş zoom'lu bir klip olur; cümle sesleri arka arkaya dizilir; o an
 söylenen kelimesi vurgulu altyazı ve sonda ikilem (seçenek) kartı eklenir.
+Kartı anlatıcı okur (sesler/kart.mp3, ses.py üretir; yoksa kart sessiz kalır).
+Senaryoda 'kanca' varsa ilk 2 sn ekranın üstünde kısa bir yazı olarak görünür.
+Ses, sonda iki geçişli loudnorm ile -14 LUFS'a getirilir (video yeniden kodlanmaz).
 Seçim kartında A ve B yan yana iki yuvarlak köşeli kart olur; kartın üstünde
 seçenek görseli (gorseller/secenek_A.png), altında harf ve metin. Görsel yoksa
 yerinde büyük harf durur.
@@ -18,6 +21,8 @@ Tasarım: docs/superpowers/specs/2026-11-26-montaj-design.md
 """
 
 import argparse
+import json
+import math
 import re
 import shutil
 import subprocess
@@ -27,9 +32,9 @@ from collections import namedtuple
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from senaryo import (SenaryoHatasi, kelime_kok, secenek_gorseli, secenek_metni,  # noqa: E402
-                     senaryo_yukle)
-from ses import SesHatasi, dosya_adi, kayitlari_yukle  # noqa: E402
+from senaryo import (SenaryoHatasi, kart_okuma_metni, kelime_kok,  # noqa: E402
+                     secenek_gorseli, secenek_metni, senaryo_yukle)
+from ses import KART, SesHatasi, dosya_adi, kayitlari_yukle  # noqa: E402
 
 KOK = Path(__file__).resolve().parent.parent
 
@@ -56,6 +61,16 @@ VURGU = "&H002DB8E8&"  # hardal sarısı #E8B82D (ASS: &HAABBGGRR)
 KART_GECIKME = 0.25  # kart içeriği (soru, kartlar, yazılar) bu kadar sonra belirmeye başlar
 KART_BELIRME = 0.4   # belirme (fade in) süresi: kararma, kartlar ve yazılar birlikte
 _FAD = f"\\fad({round(KART_BELIRME * 1000)},0)"
+KART_SES_BAS = KART_GECIKME + KART_BELIRME  # anlatıcı, kart belirdikten sonra okumaya başlar
+KART_SES_SONU = 1.5  # okuma bittikten sonra kartın ekranda kalma süresi (yorum yazma payı)
+
+# --- Kanca yazısı (senaryoda 'kanca' varsa, yalnızca 1. sahnenin başında) ---
+KANCA_BAS, KANCA_BIT = 0.1, 2.2   # sn
+KANCA_Y = 300                     # üst üçte bir; platform arayüzünün altında kalır
+KANCA_SATIR = 22                  # satır başına en fazla karakter
+
+# --- Ses yüksekliği (TikTok/Reels için) ---
+LOUDNORM = "loudnorm=I=-14:TP=-1.5:LRA=20"  # geniş LRA: doğrusal mod korunur
 
 # --- Seçim kartı düzeni (1080×1920 üzerinde piksel) ---
 KART_GEN, KART_YUK = 450, 640       # her seçenek kartı
@@ -107,8 +122,9 @@ SaatGirdisi = namedtuple("SaatGirdisi", "bas_dk fark_dk cumle kelime_bas es")
 SaatPlani = namedtuple("SaatPlani", "bas_dk fark_dk durus sure")
 # sahneler: (no, gorsel, baslangic, kare); cumleler: (anahtar, mp3, baslangic, slot_bitis, kelimeler)
 # saatler: {sahne no: SaatPlani}
-Cizelge = namedtuple("Cizelge", "sahneler cumleler kart_baslangic kart_kare toplam saatler",
-                     defaults=({},))
+# kart_sesli: kartta anlatıcı okuması var (ses girdisi cümlelerden hemen sonra gelir)
+Cizelge = namedtuple("Cizelge", "sahneler cumleler kart_baslangic kart_kare toplam saatler "
+                     "kart_sesli", defaults=({}, False))
 # Seçim kartındaki bir seçenek: gorsel = secenek_X.png yolu ya da None (yedek düzen);
 # tarif = senaryodaki görsel tarifi var mı (yoksa eksik görsel için uyarı verilmez).
 KartSecenegi = namedtuple("KartSecenegi", "harf metin gorsel tarif")
@@ -229,6 +245,22 @@ def girdileri_topla(veri, klasor, sahneler, varyantlar):
     return girdiler
 
 
+def kart_sesi(veri, klasor):
+    """Seçim kartı okumasının mp3'ü ve (varsa) uyarı. Okuma yoksa ya da eskiyse mp3 None."""
+    klasor = Path(klasor)
+    mp3 = klasor / "sesler" / f"{KART}.mp3"
+    komut = f"python kod/ses.py {_goster(klasor / 'senaryo.json')} --kart"
+    try:
+        kayit = kayitlari_yukle(klasor / "sesler").get(KART)
+    except SesHatasi:
+        kayit = None
+    if not mp3.is_file() or kayit is None:
+        return None, f"Kart okuması yok, kart sessiz kalır. Üret: {komut}"
+    if kayit.get("metin") != kart_okuma_metni(veri["ikilem"]):
+        return None, f"Kart okuması eski (ikilem değişmiş), kart sessiz kalır. Üret: {komut}"
+    return mp3, None
+
+
 def _dakika(metin):
     ss, dd = metin.split(":")
     return int(ss) * 60 + int(dd)
@@ -251,11 +283,12 @@ def saat_girdisi(saat, kelimeler):
 
 # --- Zaman çizelgesi ---
 
-def zaman_cizelgesi(girdiler, sureler):
+def zaman_cizelgesi(girdiler, sureler, kart_sure=None):
     """Sahne ve cümlelerin video üzerindeki yerleri.
 
     Sahne süresi kareye yuvarlanır; sahne başlangıçları önceki karelerin
     toplamından hesaplanır, böylece ses ile görüntü arasında kayma birikmez.
+    kart_sure: kart okumasının süresi (sn); verilirse kart, okuma bitene kadar uzar.
     """
     sahneler, cumleler, saatler = [], [], {}
     kare_toplam = 0
@@ -277,10 +310,12 @@ def zaman_cizelgesi(girdiler, sureler):
             sure = min(durus + SAAT_BEKLE + SAAT_BELIRME, kare / FPS)
             saatler[g.no] = SaatPlani(g.saat.bas_dk, g.saat.fark_dk, durus, sure)
         kare_toplam += kare
-    kart_kare = round(KART_SURESI * FPS)
+    kart_sn = KART_SURESI if kart_sure is None else max(
+        KART_SURESI, KART_SES_BAS + kart_sure + KART_SES_SONU)
+    kart_kare = round(kart_sn * FPS)
     kart_bas = kare_toplam / FPS
     return Cizelge(sahneler, cumleler, kart_bas, kart_kare, (kare_toplam + kart_kare) / FPS,
-                   saatler)
+                   saatler, kart_sure is not None)
 
 
 # --- Altyazı ---
@@ -407,7 +442,16 @@ def kart_olaylari(ikilem, baslangic, sure, plan=None):
     return olaylar
 
 
-def ass_metni(cizelge, ikilem, plan=None):
+def kanca_olaylari(kanca, cizelge):
+    """'kanca' yazısı: yalnızca video 1. sahneyle başlıyorsa, ilk ~2 sn, üstte, yumuşak geçişli."""
+    if not kanca or not cizelge.sahneler or cizelge.sahneler[0][0] != 1:
+        return []
+    metin = "\\N".join(ass_kacir(s) for s in satirlara_bol(kanca.strip(), KANCA_SATIR))
+    return [_olay(KANCA_BAS, KANCA_BIT, "Kanca",
+                  f"{{\\an8\\pos(540,{KANCA_Y})\\fad(250,450)}}{metin}")]
+
+
+def ass_metni(cizelge, ikilem, plan=None, kanca=None):
     stil = ("Style: {ad},{font},{boy},&H00FFFFFF,&H00FFFFFF,{kontur_renk},&H80000000,"
             "0,0,0,0,100,100,0,0,{kenar},{kontur},{golge},{hiza},{yan},{yan},{alt},1")
     stiller = [
@@ -421,8 +465,10 @@ def ass_metni(cizelge, ikilem, plan=None):
                     kontur=0, golge=0, hiza=5, yan=0, alt=0),
         stil.format(ad="Not", font=FONT_ADI, boy=48, kontur_renk="&H00000000", kenar=1,
                     kontur=4, golge=2, hiza=5, yan=90, alt=0),
+        stil.format(ad="Kanca", font=FONT_ADI, boy=62, kontur_renk="&H00000000", kenar=1,
+                    kontur=5, golge=2, hiza=8, yan=90, alt=0),
     ]
-    olaylar = altyazi_olaylari(cizelge) + kart_olaylari(
+    olaylar = kanca_olaylari(kanca, cizelge) + altyazi_olaylari(cizelge) + kart_olaylari(
         ikilem, cizelge.kart_baslangic, cizelge.kart_kare / FPS, plan)
     return "\n".join([
         "[Script Info]", "ScriptType: v4.00+", f"PlayResX: {GEN}", f"PlayResY: {YUK}",
@@ -592,9 +638,19 @@ def ses_filtresi(cizelge, ilk_girdi):
                         f"apad=whole_dur={uzunluk:.6f},atrim=end={uzunluk:.6f}[a{k}]")
         etiketler.append(f"[a{k}]")
     n = len(cizelge.cumleler)
-    parcalar.append(f"anullsrc=r=44100:cl=mono,atrim=duration={cizelge.kart_kare / FPS:.6f},"
-                    f"aformat=sample_fmts=fltp:channel_layouts=mono[a{n}]")
-    etiketler.append(f"[a{n}]")
+    kart_sn = cizelge.kart_kare / FPS
+    if cizelge.kart_sesli:  # kart okuması cümlelerden sonraki girdi; kart belirince başlar
+        parcalar.append(f"anullsrc=r=44100:cl=mono,atrim=duration={KART_SES_BAS:.6f},"
+                        f"aformat=sample_fmts=fltp:channel_layouts=mono[kbas]")
+        kalan = kart_sn - KART_SES_BAS
+        parcalar.append(f"[{ilk_girdi + n}:a]aresample=44100,"
+                        f"aformat=sample_fmts=fltp:channel_layouts=mono,"
+                        f"apad=whole_dur={kalan:.6f},atrim=end={kalan:.6f}[a{n}]")
+        etiketler += ["[kbas]", f"[a{n}]"]
+    else:
+        parcalar.append(f"anullsrc=r=44100:cl=mono,atrim=duration={kart_sn:.6f},"
+                        f"aformat=sample_fmts=fltp:channel_layouts=mono[a{n}]")
+        etiketler.append(f"[a{n}]")
     parcalar.append(f"{''.join(etiketler)}concat=n={len(etiketler)}:v=0:a=1[ses]")
     return ";".join(parcalar)
 
@@ -681,6 +737,36 @@ def birlestirme_komutu(liste, mp3ler, ass, fontlar, filtre_ses, cikti, ambiyansl
             "-movflags", "+faststart", cikti]
 
 
+def ses_olcum_komutu(girdi):
+    """1. geçiş: videonun sesini ölçer (sonuç stderr'de JSON)."""
+    return ["ffmpeg", "-hide_banner", "-nostats", "-i", girdi, "-vn",
+            "-af", f"{LOUDNORM}:print_format=json", "-f", "null", "-"]
+
+
+def olcumu_oku(metin):
+    """loudnorm'un yazdığı JSON'u okur; ses sessizse (ölçülemezse) None."""
+    bas, bit = metin.rfind("{"), metin.rfind("}")
+    if bas < 0 or bit < bas:
+        return None
+    try:
+        olcum = json.loads(metin[bas:bit + 1])
+        degerler = [float(olcum[k]) for k in ("input_i", "input_tp", "input_lra",
+                                               "input_thresh", "target_offset")]
+    except (ValueError, KeyError):
+        return None
+    return olcum if all(math.isfinite(d) for d in degerler) else None
+
+
+def normallestirme_komutu(girdi, olcum, cikti):
+    """2. geçiş: ölçülen değerlerle doğrusal (pompalamasız) normalizasyon; video kopyalanır."""
+    filtre = (f"{LOUDNORM}:measured_I={olcum['input_i']}:measured_TP={olcum['input_tp']}"
+              f":measured_LRA={olcum['input_lra']}:measured_thresh={olcum['input_thresh']}"
+              f":offset={olcum['target_offset']}:linear=true,aresample=44100")
+    return ["ffmpeg", "-v", "error", "-y", "-i", girdi, "-map", "0:v", "-map", "0:a",
+            "-c:v", "copy", "-af", filtre, "-c:a", "aac", "-b:a", "192k",
+            "-movflags", "+faststart", cikti]
+
+
 # --- ffmpeg ile çalıştırma ---
 
 def _program(ad):
@@ -696,6 +782,16 @@ def _calistir(komut, cwd, ne):
     if sonuc.returncode != 0:
         ayrinti = "\n".join(sonuc.stderr.strip().splitlines()[-5:])
         raise MontajHatasi(f"ffmpeg başarısız ({ne}):\n{ayrinti}")
+
+
+def _olc(komut, cwd):
+    """Ölçüm komutunu çalıştırır, stderr'i döndürür."""
+    sonuc = subprocess.run([_program(komut[0]), *komut[1:]], cwd=cwd, capture_output=True,
+                           encoding="utf-8", errors="replace")
+    if sonuc.returncode != 0:
+        ayrinti = "\n".join(sonuc.stderr.strip().splitlines()[-5:])
+        raise MontajHatasi(f"ffmpeg başarısız (ses ölçümü):\n{ayrinti}")
+    return sonuc.stderr
 
 
 def ses_suresi(mp3):
@@ -719,7 +815,8 @@ def _plan_yazdir(cizelge, tam, kart=(), senaryo=""):
             print(f"           saat {s.bas_dk // 60:02d}:{s.bas_dk % 60:02d} → "
                   f"{bit // 60:02d}:{bit % 60:02d} ({'ileri' if s.fark_dk > 0 else 'geri'}), "
                   f"{bas + s.durus:6.2f} sn'de durur")
-    print(f"  Kart     : {cizelge.kart_baslangic:6.2f} sn → {cizelge.kart_kare / FPS:5.2f} sn")
+    print(f"  Kart     : {cizelge.kart_baslangic:6.2f} sn → {cizelge.kart_kare / FPS:5.2f} sn"
+          f"{' (anlatıcı okur)' if cizelge.kart_sesli else ' (sessiz)'}")
     for k in kart:
         if k.gorsel is not None:
             print(f"    {k.harf} · {k.metin}: {k.gorsel.name}")
@@ -740,9 +837,15 @@ def montajla(veri, klasor, sahneler, varyantlar, kuru=False, sure_olc=ses_suresi
     tam = list(sahneler) == _sahne_nolari(veri)
     girdiler = girdileri_topla(veri, klasor, sahneler, varyantlar)
     sureler = {c.anahtar: sure_olc(c.mp3) for g in girdiler for c in g.cumleler}
-    cizelge = zaman_cizelgesi(girdiler, sureler)
+    kart_mp3, kart_uyarisi = kart_sesi(veri, klasor)
+    cizelge = zaman_cizelgesi(girdiler, sureler, sure_olc(kart_mp3) if kart_mp3 else None)
     kart = kart_plani(veri["ikilem"], klasor / "gorseller")
     _plan_yazdir(cizelge, tam, kart, _goster(klasor / "senaryo.json"))
+    if kart_uyarisi:
+        print(f"  Uyarı: {kart_uyarisi}")
+    if veri.get("kanca"):
+        ek = "" if cizelge.sahneler[0][0] == 1 else " (1. sahne yok, gösterilmez)"
+        print(f"  Kanca    : \"{veri['kanca']}\"{ek}")
     ambiyans, uyarilar = ambiyans_plani(veri, cizelge, ambiyans_klasoru)
     for p in ambiyans:
         print(f"  Ambiyans : {p.mekan:<9} {p.bas:6.2f} → {p.bit:6.2f} sn")
@@ -769,7 +872,8 @@ def montajla(veri, klasor, sahneler, varyantlar, kuru=False, sure_olc=ses_suresi
                               "kart.mp4", zoom=zoom[1]), is_, "kart")
         klipler.append("kart.mp4")
         (is_ / "klipler.txt").write_text("".join(f"file '{k}'\n" for k in klipler), encoding="utf-8")
-        (is_ / "altyazi.ass").write_text(ass_metni(cizelge, veri["ikilem"], kart), encoding="utf-8")
+        (is_ / "altyazi.ass").write_text(ass_metni(cizelge, veri["ikilem"], kart, veri.get("kanca")),
+                                         encoding="utf-8")
         # Font geçici klasöre kopyalanır: filtreye kısa, göreli, sürücü harfsiz yol verilir.
         (is_ / "fontlar").mkdir()
         font = FONT_KLASORU / FONT_DOSYASI
@@ -777,6 +881,8 @@ def montajla(veri, klasor, sahneler, varyantlar, kuru=False, sure_olc=ses_suresi
             raise MontajHatasi(f"Font bulunamadı: {_goster(font)}")
         shutil.copy2(font, is_ / "fontlar" / FONT_DOSYASI)
         mp3ler = [str(c[1].resolve()) for c in cizelge.cumleler]
+        if kart_mp3:
+            mp3ler.append(str(kart_mp3.resolve()))
         print("  Birleştiriliyor…")
         filtre_ses = ses_filtresi(cizelge, 1)
         if ambiyans:
@@ -784,8 +890,15 @@ def montajla(veri, klasor, sahneler, varyantlar, kuru=False, sure_olc=ses_suresi
         _calistir(birlestirme_komutu("klipler.txt", mp3ler, "altyazi.ass", "fontlar", filtre_ses,
                                      "cikti.mp4", [str(p.dosya.resolve()) for p in ambiyans]),
                   is_, "birleştirme")
+        son = "cikti.mp4"
+        olcum = olcumu_oku(_olc(ses_olcum_komutu("cikti.mp4"), is_))
+        if olcum:
+            print(f"  Ses yüksekliği {float(olcum['input_i']):.1f} → -14 LUFS…")
+            _calistir(normallestirme_komutu("cikti.mp4", olcum, "cikti_ses.mp4"), is_,
+                      "ses yüksekliği")
+            son = "cikti_ses.mp4"
         try:
-            (is_ / "cikti.mp4").replace(hedef)
+            (is_ / son).replace(hedef)
         except OSError as e:
             raise MontajHatasi(f"{_goster(hedef)} yazılamadı ({e.strerror or e}). Video bir "
                                "oynatıcıda açıksa kapatıp yeniden dene.") from e

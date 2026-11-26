@@ -55,7 +55,7 @@ Konu değişirse aynı sohbette devam etme, yeni oturum aç.
 - [ ] `--durum` ile eksik sahne kalmadığını kontrol et
 - [ ] Yeni bir karakter ilk kez konuşacaksa: önce kısa bir dinleme denemesiyle ses seç, `karakterler/sesler.json`'a ekle
 - [ ] `python kod/ses.py bolumler/bolum_NN/senaryo.json --kuru` → kaç karakter harcanacak, kota yetiyor mu?
-- [ ] `python kod/ses.py bolumler/bolum_NN/senaryo.json` → onayla (e), sesleri dinle; beğenmediğin cümle için `--cumle S.C` (ör. `--cumle 3.2`)
+- [ ] `python kod/ses.py bolumler/bolum_NN/senaryo.json` → onayla (e), sesleri dinle; beğenmediğin cümle için `--cumle S.C` (ör. `--cumle 3.2`), kart okuması için `--kart`
 - [ ] `python kod/montaj.py bolumler/bolum_NN/senaryo.json --sahne 3` → tek sahne önizlemesi (`onizleme.mp4`); beğenmediğin görsel için `--varyant 3=b`
 - [ ] `python kod/montaj.py bolumler/bolum_NN/senaryo.json --varyant 3=b,5=c` → tam bölüm (`video.mp4`). Önce `--kuru` ile süreyi gör.
 - [ ] Yeni bir mekân ilk kez geçiyorsa (ör. `istasyon`): freesound'da CC0 kayıt bul → `python kod/ambiyans_hazirla.py kaynak.mp3 istasyon --bas <sn> --sure 100` → `varliklar/ambiyans/KAYNAKLAR.md`'ye ekle

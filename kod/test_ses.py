@@ -192,7 +192,7 @@ def test_dosya_adi():
 def test_hepsi_yeni():
     with tempfile.TemporaryDirectory() as d:
         isler = isler_ve_klasor(d)
-    assert [i.anahtar for i in isler] == ["s01_c1", "s01_c2", "s02_c1", "s03_c1", "s03_c2"]
+    assert [i.anahtar for i in isler] == ["s01_c1", "s01_c2", "s02_c1", "s03_c1", "s03_c2", "kart"]
     assert all(i.uret for i in isler)
     assert isler[2].ses_id == "ID_FATMA" and isler[2].konusan == "fatma"
 
@@ -260,8 +260,22 @@ def test_karakter_sayisi():
         isler = isler_ve_klasor(d, {"s01_c1": kayit("Yanındaki koltuk boş.", "ID_ANLATICI")},
                                 mp3ler=["s01_c1"])
     beklenen = sum(len(m) for m in ["Ama biri vardı.", "Bunu al evladım.", "Biletler lütfen!",
-                                     "Hep acelesi var."])
+                                     "Hep acelesi var.", "? A: a. B: b."])
     assert karakter_sayisi(isler) == beklenen, karakter_sayisi(isler)
+
+
+def test_kart_okumasi():
+    with tempfile.TemporaryDirectory() as d:
+        isler = isler_ve_klasor(d)
+        kart = isler[-1]
+        assert (kart.anahtar, kart.konusan, kart.metin, kart.ses_id) == (
+            "kart", "anlatici", "? A: a. B: b.", "ID_ANLATICI"), kart
+        hazir = isler_ve_klasor(d, {"kart": kayit("? A: a. B: b.", "ID_ANLATICI")}, mp3ler=["kart"])
+        assert not hazir[-1].uret, hazir[-1]
+        yalniz = isler_ve_klasor(d, {"kart": kayit("? A: a. B: b.", "ID_ANLATICI")}, kart=True)
+        assert [(i.anahtar, i.uret) for i in yalniz] == [("kart", True)], yalniz
+        assert all(i.anahtar != "kart" for i in isler_ve_klasor(d, sahne=1))
+        assert all(i.anahtar != "kart" for i in isler_ve_klasor(d, cumle=(1, 1)))
 
 
 def test_bozuk_zamanlama():
@@ -281,7 +295,9 @@ def test_uretim_dosya_ve_kayit():
         istemci = SahteIstemci()
         kod, cikti = calistir(klasor, istemci)
         assert kod == 0, cikti
-        assert len(istemci.cagrilar) == 5, istemci.cagrilar
+        assert len(istemci.cagrilar) == 6, istemci.cagrilar
+        assert istemci.cagrilar[-1]["text"] == "? A: a. B: b.", istemci.cagrilar[-1]
+        assert (klasor / "kart.mp3").read_bytes() == SAHTE_MP3
         c = istemci.cagrilar[2]
         assert c["voice_id"] == "ID_FATMA" and c["text"] == "Bunu al evladım.", c
         assert c["model_id"] == "eleven_v4" and c["language_code"] == "tr", c
@@ -346,14 +362,14 @@ def test_kuru_cagrilmaz():
         kod, cikti = calistir(Path(d), istemci, kuru=True,
                               cevap=None)  # soru sorulursa None döner ve test bozulur
         assert kod == 0 and not istemci.cagrilar, cikti
-        assert "5 cümle" in cikti and "9419" in cikti, cikti
+        assert "6 cümle" in cikti and "9419" in cikti, cikti
 
 
 def test_kuru_anahtarsiz():
     with tempfile.TemporaryDirectory() as d:
         kod, cikti = calistir(Path(d), None, kuru=True)
         assert kod == 0, cikti
-        assert "bilinmiyor" in cikti and "5 cümle" in cikti, cikti
+        assert "bilinmiyor" in cikti and "6 cümle" in cikti, cikti
         hata_bekle(lambda: calistir(Path(d), None), "ELEVENLABS_API_KEY")
 
 
@@ -365,7 +381,7 @@ def test_yarida_hata_kayit_korunur():
         assert sorted(kayitlar) == ["s01_c1", "s01_c2"], kayitlar
         istemci = SahteIstemci()
         kod, _ = calistir(Path(d), istemci)
-        assert kod == 0 and len(istemci.cagrilar) == 3, istemci.cagrilar
+        assert kod == 0 and len(istemci.cagrilar) == 4, istemci.cagrilar
 
 
 def test_api_hata_mesajlari():

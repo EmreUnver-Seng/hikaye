@@ -29,6 +29,8 @@ CUMLE_KELIME_SINIRI = 25
 SON_BOLUM = 8  # finalde seçenek yok, yalnızca soru
 
 KOK_ALANLAR = {"bolum", "baslik", "sahneler", "ikilem"}
+KOK_ISTEGE_BAGLI = {"kanca"}  # ilk 2 sn ekranın üstünde duran kısa yazı (isteğe bağlı)
+KANCA_KELIME_SINIRI = 6
 SAHNE_ALANLARI = {"no", "gorsel", "karakterler", "cumleler"}
 SAHNE_ISTEGE_BAGLI = {"mekan", "saat"}  # 'mekan' yoksa uyarı verilir; 'saat' isteğe bağlı
 SAAT_ALANLARI = {"bas", "bit", "yon", "cumle", "kelime"}  # sahnedeki saat animasyonu
@@ -108,12 +110,17 @@ def dogrula(veri, klasor_adi=None):
     klasor_adi verilirse ("bolum_03" gibi) bölüm numarasıyla eşleştiği kontrol edilir.
     """
     d = _Denetci()
-    if not d.nesne(veri, "", KOK_ALANLAR):
+    if not d.nesne(veri, "", KOK_ALANLAR, KOK_ALANLAR | KOK_ISTEGE_BAGLI):
         return d.hatalar, d.uyarilar
 
     bolum = _bolum_dogrula(d, veri.get("bolum"), klasor_adi) if "bolum" in veri else None
     if "baslik" in veri:
         d.metin(veri["baslik"], "baslik")
+    if "kanca" in veri and d.metin(veri["kanca"], "kanca"):
+        n = _kelime_sayisi(veri["kanca"])
+        if n > KANCA_KELIME_SINIRI:
+            d.uyari("kanca", f"{n} kelime; ekranı kalabalıklaştırmaması için en fazla "
+                             f"{KANCA_KELIME_SINIRI} önerilir.")
 
     sen_sayisi = 0
     toplam_kelime = 0
@@ -318,6 +325,16 @@ def _ikilem_dogrula(d, ikilem, bolum):
 def secenek_metni(deger):
     """Seçenek değeri (yazı ya da {"metin", "gorsel"}) → ekranda yazacak metin."""
     return deger["metin"] if isinstance(deger, dict) else deger
+
+
+def kart_okuma_metni(ikilem):
+    """Anlatıcının seçim kartında okuyacağı metin: soru, ardından seçenekler (varsa)."""
+    parcalar = [ikilem["soru"].strip()]
+    for harf in ("A", "B"):
+        if harf in (ikilem.get("secenekler") or {}):
+            metin = secenek_metni(ikilem["secenekler"][harf]).strip()
+            parcalar.append(f"{harf}: {metin}" + ("" if metin.endswith((".", "!", "?", "…")) else "."))
+    return " ".join(parcalar)
 
 
 def secenek_gorseli(deger):

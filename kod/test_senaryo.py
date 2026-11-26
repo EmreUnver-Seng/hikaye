@@ -15,8 +15,8 @@ from pathlib import Path
 KOD = Path(__file__).resolve().parent
 sys.path.insert(0, str(KOD))
 
-from senaryo import (SenaryoHatasi, dogrula, secenek_gorseli, secenek_metni,  # noqa: E402
-                     senaryo_yukle)
+from senaryo import (SenaryoHatasi, dogrula, kart_okuma_metni,  # noqa: E402
+                     secenek_gorseli, secenek_metni, senaryo_yukle)
 
 
 def gecerli_ornek(bolum=1):
@@ -92,6 +92,20 @@ def test_eksik_baslik():
 
 def test_bos_baslik():
     hata_icerir(bozuk(lambda v: v.update(baslik="  ")), "baslik")
+
+
+def test_kanca_istege_bagli():
+    hatalar, uyarilar = dogrula(bozuk(lambda v: v.update(kanca="Yanındaki koltuk neden boş?")))
+    assert hatalar == [] and uyarilar == [], (hatalar, uyarilar)
+    hata_icerir(bozuk(lambda v: v.update(kanca="")), "kanca")
+    hata_icerir(bozuk(lambda v: v.update(kanca=3)), "kanca")
+    uyari_icerir(bozuk(lambda v: v.update(kanca="bir iki üç dört beş altı yedi")), "kanca")
+
+
+def test_kart_okuma_metni():
+    assert kart_okuma_metni({"soru": "Ne yapacaksın?", "secenekler": {
+        "A": "Zarfı aç", "B": {"metin": "Söz verdin, açma.", "gorsel": "x"}}}) ==         "Ne yapacaksın? A: Zarfı aç. B: Söz verdin, açma."
+    assert kart_okuma_metni({"soru": "Sence ne oldu?"}) == "Sence ne oldu?"
 
 
 def test_bilinmeyen_alan():

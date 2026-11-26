@@ -2,12 +2,14 @@
 
 Her cümle, konuşanın karakterler/sesler.json'daki sabit sesiyle seslendirilir.
 Altyazı için kelime zamanlamaları sesler/zamanlama.json'a yazılır.
+Seçim kartı da anlatıcıya okutulur (soru + seçenekler) → sesler/kart.mp3.
 Var olan ve değişmemiş cümleler atlanır; her harcamadan önce kota gösterilip onay istenir.
 
 Kullanım:
     python kod/ses.py bolumler/bolum_01/senaryo.json              # eksik ve değişen cümleler
     python kod/ses.py bolumler/bolum_01/senaryo.json --sahne 3    # yalnızca 3. sahne
     python kod/ses.py bolumler/bolum_01/senaryo.json --cumle 3.2  # tek cümleyi yeniden üret
+    python kod/ses.py bolumler/bolum_01/senaryo.json --kart       # seçim kartı okumasını yeniden üret
     python kod/ses.py bolumler/bolum_01/senaryo.json --kuru       # hiçbir şey üretmeden say
 
 Tasarım: docs/superpowers/specs/2026-11-26-ses-design.md
@@ -22,7 +24,8 @@ from collections import namedtuple
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from senaryo import ANLATICI, KARAKTERLER, SenaryoHatasi, senaryo_yukle  # noqa: E402
+from senaryo import (ANLATICI, KARAKTERLER, SenaryoHatasi, kart_okuma_metni,  # noqa: E402
+                     senaryo_yukle)
 
 KOK = Path(__file__).resolve().parent.parent
 SES_HARITASI = KOK / "karakterler" / "sesler.json"
@@ -31,6 +34,7 @@ SES_BICIMI = "mp3_44100_128"
 DIL = "tr"
 DIL_KODU_DESTEKLEMEYEN = {"eleven_multilingual_v2"}
 BILINEN_KONUSANLAR = (ANLATICI, *KARAKTERLER)
+KART = "kart"  # seçim kartı okumasının anahtarı (kart.mp3); sahne/cümle numarası 0
 
 # kaynak: aynı metin/ses/modelle hazır başka bir kaydın anahtarı (cümle eklenip
 # silinince numaralar kayar); varsa API yerine o ses kopyalanır, kredi harcanmaz.
@@ -157,8 +161,12 @@ def kayitlari_yukle(klasor):
     return veri["cumleler"]
 
 
-def isleri_hazirla(veri, harita, kayitlar, klasor, sahne=None, cumle=None):
-    """Kapsamdaki her cümle için Is döndürür; uret=False yalnızca hazır ve değişmemişse."""
+def isleri_hazirla(veri, harita, kayitlar, klasor, sahne=None, cumle=None, kart=False):
+    """Kapsamdaki her cümle için Is döndürür; uret=False yalnızca hazır ve değişmemişse.
+
+    Tam bölümde (sahne/cümle verilmemişse) seçim kartı okuması da eklenir; kart=True
+    yalnızca onu (var olsa da) yeniden üretir.
+    """
     sahneler = {s["no"]: s for s in veri["sahneler"]}
     if cumle is not None:
         sahne_no, cumle_no = cumle
@@ -175,6 +183,14 @@ def isleri_hazirla(veri, harita, kayitlar, klasor, sahne=None, cumle=None):
         return ((Path(klasor) / f"{anahtar}.mp3").exists() and k.get("metin") == metin
                 and k.get("ses_id") == ses_id and k.get("model") == harita["model"])
 
+    if kart or (sahne is None and cumle is None):
+        metin = kart_okuma_metni(veri["ikilem"])
+        ses_id = harita["sesler"].get(ANLATICI)
+        kart_isi = Is(KART, 0, 0, ANLATICI, metin, ses_id, kart or not _hazir_mi(KART, metin, ses_id))
+        if kart:
+            return [kart_isi]
+    else:
+        kart_isi = None
     isler = []
     for s in veri["sahneler"]:
         if sahne is not None and s["no"] != sahne:
@@ -189,9 +205,11 @@ def isleri_hazirla(veri, harita, kayitlar, klasor, sahne=None, cumle=None):
             uret = cumle is not None or not _hazir_mi(anahtar, c["metin"], ses_id)
             kaynak = None
             if uret and cumle is None and ses_id is not None:
-                kaynak = next((a for a in sorted(kayitlar) if a != anahtar
+                kaynak = next((a for a in sorted(kayitlar) if a not in (anahtar, KART)
                                and _hazir_mi(a, c["metin"], ses_id)), None)
             isler.append(Is(anahtar, s["no"], i, c["konusan"], c["metin"], ses_id, uret, kaynak))
+    if kart_isi:
+        isler.append(kart_isi)
     return isler
 
 
@@ -273,11 +291,11 @@ def _kopyala(klasor, bolum, kayitlar, kopyalar, yaz):
 # --- Akış ---
 
 def seslendir(veri, klasor, harita, istemci, sahne=None, cumle=None, kuru=False,
-              sor=input, yaz=print):
+              sor=input, yaz=print, kart=False):
     """Kapsamdaki cümleleri seslendirir. Çıkış kodu döndürür; API/dosya hatasında SesHatasi."""
     klasor = Path(klasor)
     kayitlar = kayitlari_yukle(klasor)
-    isler = isleri_hazirla(veri, harita, kayitlar, klasor, sahne, cumle)
+    isler = isleri_hazirla(veri, harita, kayitlar, klasor, sahne, cumle, kart)
 
     eksik = eksik_sesler(isler)
     if eksik:
@@ -286,9 +304,9 @@ def seslendir(veri, klasor, harita, istemci, sahne=None, cumle=None, kuru=False,
         yaz("  (Yeni karakter için önce kısa bir dinleme denemesiyle ses seç.) Hiçbir şey üretilmedi.")
         return 1
 
-    if sahne is None and cumle is None:
+    if sahne is None and cumle is None and not kart:
         gecerli = {dosya_adi(s["no"], i) for s in veri["sahneler"]
-                   for i in range(1, len(s["cumleler"]) + 1)}
+                   for i in range(1, len(s["cumleler"]) + 1)} | {KART}
         fazla = sorted(set(kayitlar) - gecerli)
         if fazla:
             yaz(f"! Senaryoda artık olmayan kayıtlar (silinmedi): {', '.join(fazla)}")
@@ -384,6 +402,8 @@ def main(argv):
     kapsam.add_argument("--sahne", type=int, help="yalnızca bu sahne")
     kapsam.add_argument("--cumle", type=_cumle_numarasi,
                         help="tek cümleyi (var olsa da) yeniden üret, ör. 3.2")
+    kapsam.add_argument("--kart", action="store_true",
+                        help="seçim kartı okumasını (var olsa da) yeniden üret")
     ayristirici.add_argument("--kuru", action="store_true",
                              help="hiçbir şey üretme: ne üretileceğini, karakter ve kotayı göster")
     args = ayristirici.parse_args(argv)
@@ -398,7 +418,7 @@ def main(argv):
     try:
         harita = ses_haritasi_yukle(SES_HARITASI)
         return seslendir(veri, args.senaryo.parent / "sesler", harita, _istemci_olustur(),
-                         sahne=args.sahne, cumle=args.cumle, kuru=args.kuru)
+                         sahne=args.sahne, cumle=args.cumle, kuru=args.kuru, kart=args.kart)
     except SesHatasi as e:
         for h in e.hatalar:
             print(f"✗ {h}")

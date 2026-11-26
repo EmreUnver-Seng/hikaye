@@ -20,6 +20,9 @@ from montaj import (  # noqa: E402
     CUMLE_ARASI,
     CUMLE_SONU_PAYI,
     FONT_ADI,
+    KANCA_BIT,
+    KART_SES_BAS,
+    KART_SES_SONU,
     SAHNE_SONU,
     KART_XLER,
     KART_Y,
@@ -41,6 +44,10 @@ from montaj import (  # noqa: E402
     ass_zaman,
     birlestirme_komutu,
     girdileri_topla,
+    kanca_olaylari,
+    kart_sesi,
+    normallestirme_komutu,
+    olcumu_oku,
     gruplara_bol,
     kart_komutu,
     kart_olaylari,
@@ -344,6 +351,74 @@ def test_kart_plani():
         kontrol("bölüm 8 boş plan", kart_plani({"soru": "?"}, g) == [])
 
 
+def test_kart_sesli_cizelge():
+    sureler = {"s01_c1": 1.0, "s01_c2": 2.0, "s02_c1": 1.0}
+    c = zaman_cizelgesi(_girdiler(), sureler, kart_sure=5.0)
+    beklenen = round((KART_SES_BAS + 5.0 + KART_SES_SONU) * 30)
+    kontrol("kart okuma kadar uzar", c.kart_sesli and c.kart_kare == beklenen, c.kart_kare)
+    kisa = zaman_cizelgesi(_girdiler(), sureler, kart_sure=0.5)
+    kontrol("kart en az 4 sn", kisa.kart_kare == 120, kisa.kart_kare)
+    f = ses_filtresi(c, 1)
+    kontrol("kart sesi 4. girdi", "[4:a]" in f and "[5:a]" not in f, f)
+    kontrol("kart sesi gecikmeli", f"atrim=duration={KART_SES_BAS:.6f}" in f, f)
+    kontrol("kart ses concat", "concat=n=5:v=0:a=1" in f, f)
+    kontrol("sessiz kartta girdi yok", "[4:a]" not in ses_filtresi(
+        zaman_cizelgesi(_girdiler(), sureler), 1))
+
+
+def test_kart_sesi():
+    veri = ornek_veri()
+    with tempfile.TemporaryDirectory() as tmp:
+        klasor = sahte_bolum(tmp, veri)
+        mp3, uyari = kart_sesi(veri, klasor)
+        kontrol("kart okuması yok uyarısı", mp3 is None and "--kart" in uyari, uyari)
+        zamanlama = klasor / "sesler" / "zamanlama.json"
+        kayitlar = json.loads(zamanlama.read_text(encoding="utf-8"))
+        kayitlar["cumleler"]["kart"] = {"metin": "eski soru"}
+        zamanlama.write_text(json.dumps(kayitlar, ensure_ascii=False), encoding="utf-8")
+        (klasor / "sesler" / "kart.mp3").write_bytes(b"mp3")
+        mp3, uyari = kart_sesi(veri, klasor)
+        kontrol("kart okuması eski", mp3 is None and "eski" in uyari, uyari)
+        kayitlar["cumleler"]["kart"] = {
+            "metin": "Teyze kayıp. Zarfı şimdi açacak mısın? A: Zarfı aç. B: Söz verdin, açma."}
+        zamanlama.write_text(json.dumps(kayitlar, ensure_ascii=False), encoding="utf-8")
+        mp3, uyari = kart_sesi(veri, klasor)
+        kontrol("kart okuması hazır", mp3 == klasor / "sesler" / "kart.mp3" and uyari is None, uyari)
+
+
+def test_kanca():
+    c = zaman_cizelgesi(_girdiler(), {"s01_c1": 1.0, "s01_c2": 2.0, "s02_c1": 1.0})
+    olay = kanca_olaylari("Yanındaki koltuk neden boş?", c)
+    kontrol("kanca tek olay", len(olay) == 1, olay)
+    kontrol("kanca üstte, 2 sn", "\\an8" in olay[0] and ass_zaman(KANCA_BIT) in olay[0], olay)
+    kontrol("kanca iki satır", "\\N" in olay[0], olay)
+    kontrol("kanca yoksa olay yok", kanca_olaylari(None, c) == [])
+    sadece2 = zaman_cizelgesi(_girdiler()[1:], {"s02_c1": 1.0})
+    kontrol("1. sahne yoksa kanca yok", kanca_olaylari("Soru?", sadece2) == [])
+    metin = ass_metni(c, IKILEM, kanca="Soru?")
+    kontrol("ass kanca stili ve olayı", "Style: Kanca," in metin and ",Kanca,," in metin)
+
+
+def test_ses_yuksekligi():
+    stderr = """[Parsed_loudnorm_0 @ 0x1]
+{
+	"input_i" : "-23.10",
+	"input_tp" : "-4.20",
+	"input_lra" : "3.10",
+	"input_thresh" : "-33.50",
+	"output_i" : "-14.00",
+	"target_offset" : "0.30"
+}"""
+    olcum = olcumu_oku(stderr)
+    kontrol("ölçüm okunur", olcum and olcum["input_i"] == "-23.10", olcum)
+    kontrol("sessiz ölçüm None", olcumu_oku(stderr.replace('"-23.10"', '"-inf"')) is None)
+    kontrol("JSON yoksa None", olcumu_oku("hata") is None)
+    k = normallestirme_komutu("cikti.mp4", olcum, "son.mp4")
+    km = " ".join(k)
+    kontrol("normalizasyon doğrusal", "linear=true" in km and "measured_I=-23.10" in km, km)
+    kontrol("normalizasyon video kopyalar", k[k.index("-c:v") + 1] == "copy", k)
+
+
 def test_ass_metni():
     c = zaman_cizelgesi(_girdiler(), {"s01_c1": 1.0, "s01_c2": 2.0, "s02_c1": 1.0})
     metin = ass_metni(c, IKILEM)
@@ -583,6 +658,30 @@ def test_uctan_uca():
              "-f", "null", "-"], capture_output=True, encoding="utf-8", errors="replace").stderr
         kontrol("ambiyans kartta da duyulur", "mean_volume: -91" not in hacim and "mean_volume" in hacim,
                 hacim[-300:])
+
+        # kart okumalı ve kancalı: kart okuma bitene kadar uzar, ses -14 LUFS civarına gelir
+        _uret([ffmpeg, "-v", "error", "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=5",
+               "-c:a", "libmp3lame", str(klasor / "sesler" / "kart.mp3")])
+        zamanlama = klasor / "sesler" / "zamanlama.json"
+        kayitlar = json.loads(zamanlama.read_text(encoding="utf-8"))
+        kayitlar["cumleler"]["kart"] = {
+            "metin": "Teyze kayıp. Zarfı şimdi açacak mısın? A: Zarfı aç. B: Söz verdin, açma."}
+        zamanlama.write_text(json.dumps(kayitlar, ensure_ascii=False), encoding="utf-8")
+        veri["kanca"] = "Yanındaki koltuk neden boş?"
+        cikti = montajla(veri, klasor, [1, 2], {}, ambiyans_klasoru=amb)
+        kontrol("tam bölüm adı", cikti == klasor / "video.mp4", cikti)
+        sure = float(subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0",
+             str(cikti)], capture_output=True, encoding="utf-8").stdout.strip())
+        sahneler = 2 * round((0.5 * 2 + CUMLE_ARASI + SAHNE_SONU) * 30) / 30
+        beklenen = sahneler + round((KART_SES_BAS + 5.0 + KART_SES_SONU) * 30) / 30
+        kontrol("kart okumalı video süresi", abs(sure - beklenen) < 0.2, f"{sure} != {beklenen}")
+        olcum = subprocess.run(
+            [ffmpeg, "-hide_banner", "-nostats", "-i", str(cikti), "-af",
+             "loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"],
+            capture_output=True, encoding="utf-8", errors="replace").stderr
+        olcum = olcumu_oku(olcum)
+        kontrol("ses -14 LUFS civarı", olcum and abs(float(olcum["input_i"]) + 14) < 1.5, olcum)
 
 
 if __name__ == "__main__":
