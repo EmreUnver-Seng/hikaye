@@ -1,4 +1,6 @@
-"""API anahtarlarının ve ffmpeg'in çalıştığını kontrol eder.
+"""ElevenLabs anahtarının ve ffmpeg'in çalıştığını kontrol eder.
+
+Görseller Gemini uygulamasında elle üretildiği için Gemini anahtarı gerekmez.
 
 Çalıştırma:  .venv/bin/python kod/test_anahtarlar.py
 Anahtarların kendisini asla ekrana yazmaz.
@@ -6,32 +8,13 @@ Anahtarların kendisini asla ekrana yazmaz.
 
 import os
 import shutil
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
 
 KOK = Path(__file__).resolve().parent.parent
 load_dotenv(KOK / ".env")
-
-
-def test_gemini() -> bool:
-    anahtar = os.getenv("GEMINI_API_KEY")
-    if not anahtar:
-        print("❌ Gemini: GEMINI_API_KEY .env içinde boş")
-        return False
-    try:
-        from google import genai
-
-        client = genai.Client(api_key=anahtar)
-        modeller = [m.name for m in client.models.list()]
-        gorsel = [m for m in modeller if "image" in m.lower()]
-        print(f"✅ Gemini: anahtar çalışıyor ({len(modeller)} model erişilebilir)")
-        if gorsel:
-            print("   Görsel modelleri:", ", ".join(sorted(gorsel)))
-        return True
-    except Exception as e:  # noqa: BLE001
-        print(f"❌ Gemini: {type(e).__name__}: {e}")
-        return False
 
 
 def test_elevenlabs() -> bool:
@@ -63,6 +46,7 @@ def test_ffmpeg() -> bool:
 
 
 if __name__ == "__main__":
-    sonuclar = [test_gemini(), test_elevenlabs(), test_ffmpeg()]
+    sys.stdout.reconfigure(encoding="utf-8")  # Windows konsolu
+    sonuclar = [test_elevenlabs(), test_ffmpeg()]
     print()
     print("Hepsi hazır 🎉" if all(sonuclar) else "Bazı kontroller başarısız, yukarıya bak.")

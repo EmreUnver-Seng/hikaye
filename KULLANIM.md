@@ -50,6 +50,9 @@ Konu değişirse aynı sohbette devam etme, yeni oturum aç.
 - [ ] Oylama bitti → yeni oturum "Bölüm N"
 - [ ] "X kazandı, durum.json'a işle ve Bölüm N'in senaryosunu yaz"
 - [ ] Senaryoyu VS Code'da oku ve düzelt
+- [ ] Karakter referansı eksikse: `python kod/gorsel.py bolumler/bolum_NN/senaryo.json --karakter <kimlik>` → Gemini uygulamasında üret → `--yerlestir <kimlik>`
+- [ ] `python kod/gorsel.py bolumler/bolum_NN/senaryo.json` → `gorseller/istekler.md`'deki her sahne için Gemini uygulamasında 3 görsel üret, indir → `--yerlestir <sahne no>` (dosya verilmezse İndirilenler'deki en yenileri alır)
+- [ ] `--durum` ile eksik sahne kalmadığını kontrol et
 - [ ] `python kod/yeni_bolum.py N` → görsel seç, sesleri dinle
 - [ ] Videoyu telefonda izle
 - [ ] Yükle: **AI etiketi** + anket
@@ -69,6 +72,7 @@ git status                                 # neler değişti?
 - **Oturunca:** `git pull`.
 - İki cihazda aynı anda değişiklik yapma.
 - `.env` git'te yoktur: anahtarlar şifre yöneticisinde (Apple Şifreler) dursun.
+- `karakterler/stil.png` (görsel stil örneği) git'te yoktur: `hikaye-medya` yedeğiyle birlikte diğer cihaza elle kopyala; yoksa `gorsel.py` istekleri stil örneği olmadan yazar.
 - Üretilen medya (`bolumler/`) git'te yoktur: iCloud Drive'daki `hikaye-medya` klasörüne yedekle. Proje klasörünün tamamını iCloud'a koyma.
 
 ## Windows'ta ilk kurulum (bir kez)

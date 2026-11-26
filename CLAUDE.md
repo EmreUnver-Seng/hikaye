@@ -14,16 +14,16 @@ Platform: **macOS (Apple Silicon)** ana cihaz + **Windows** ikinci cihaz. Proje 
 - `subprocess` çağrılarında komut liste olarak verilir, `shell=True` kullanılmaz.
 
 ## Alınmış kararlar
-- **Araçlar:** Claude (senaryo; **API kullanılmaz**, Claude Code üzerinden Pro aboneliğiyle), Gemini (görsel; isteğe bağlı Veo ile kısa klip), ElevenLabs (seslendirme; istenirse efekt ve müzik).
+- **Araçlar:** Claude (senaryo; **API kullanılmaz**, Claude Code üzerinden Pro aboneliğiyle), Gemini **uygulaması** (görsel; **API kullanılmaz**, ücretli olduğu için. Görseller uygulamada elle üretilir, kod prompt'u hazırlar ve dosyayı yerleştirir), ElevenLabs (seslendirme; istenirse efekt ve müzik).
 - **Çalışma şekli:** Yarı otomatik. Kod tekrar eden işleri yapar (API çağrıları, dosya indirme ve adlandırma, montaj, altyazı, durum kaydı). Yaratıcı kararları kullanıcı verir.
-- **Görsel stil:** 2 boyutlu, basit karakterler (düz renk, kalın hat). Tutarlılık için karakter referans görselleri her istekte gönderilir.
+- **Görsel stil:** 2 boyutlu dijital çizgi film; temiz koyu kontur, iki tonlu gölgelendirme, orta seviye detay (fotogerçekçi değil). Tarz örneği `karakterler/stil.png` her istekte en sona eklenir. Tutarlılık için karakter referans görselleri de her istekte gönderilir.
 - **Format:** Dikey 9:16, bölüm başına 45–90 sn, 8–12 sahne, altyazılı.
 - **Tür:** Gerilim/gizem. Hikâye: "Son Durak" (8 bölüm, gece otobüsü, "sen" diye hitap eden anlatıcı). Ayrıntı: `hikaye.md`.
 
 ## Bir bölümün akışı (kullanıcının gözünden)
 1. Kullanıcı Claude Code'a "Bölüm N'in senaryosunu yaz" der. Claude `hikaye.md` ve `durum.json` dosyalarını okuyup `bolumler/bolum_NN/senaryo.json` dosyasını yazar. (İleride `senaryo.py` bunu `claude -p` ile otomatik yapabilir.) **Kontrol noktası:** Kullanıcı senaryoyu okuyup düzenler.
 2. `python kod/yeni_bolum.py` komutu çalıştırılır; mevcut `senaryo.json` dosyasını girdi olarak alır.
-3. Gemini her sahne için 3 görsel üretir (`sahneN_a/b/c.png`). **Kontrol noktası:** Kullanıcı her sahne için birini seçer veya yeniden ürettirir.
+3. `gorsel.py` her sahne için istek (referans görseller + prompt) hazırlar; kullanıcı Gemini uygulamasında sahne başına 3 görsel üretir, `--yerlestir` ile `sahneN_a/b/c.png` olarak 1080×1920'ye kesilip yerleşir. **Kontrol noktası:** Kullanıcı her sahne için birini seçer veya yeniden üretir. Seçilmeyenler ilham arşivi olarak kalır.
 4. ElevenLabs anlatımı cümle cümle seslendirir ve kelime zamanlamalarını kaydeder. **Kontrol noktası:** Kullanıcı dinler, gerekirse tek bir cümleyi yeniden ürettirir.
 5. ffmpeg videoyu birleştirir: görseller, ses, altyazı, müzik ve sonda seçenek kartı.
 6. Video yüklenir. Sonra kazanan seçim girilir ("B kazandı") ve `durum.json` güncellenir.
@@ -33,25 +33,25 @@ Hedef süre: kullanıcı başına bölüm başına 20–40 dk.
 ## Klasör yapısı
 ```
 hikaye-projesi/
-├── .env                  # GEMINI_API_KEY, ELEVENLABS_API_KEY (git'e EKLENMEZ)
+├── .env                  # ELEVENLABS_API_KEY (git'e EKLENMEZ)
 ├── hikaye.md             # dünya, ton, karakter tarifleri, ana olay örgüsü, dallanma noktaları
 ├── durum.json            # bölüm özetleri + kazanan seçimler
 ├── karakterler/          # referans görseller (karakter sayfaları)
 ├── bolumler/bolum_01/    # senaryo.json, gorseller/, sesler/, video.mp4
 └── kod/
     ├── senaryo.py        # senaryo.json şemasını doğrular (ileride: claude -p ile üretim)
-    ├── gorsel.py         # Gemini
+    ├── gorsel.py         # görsel istekleri + yerleştirme (Gemini uygulaması, elle)
     ├── ses.py            # ElevenLabs
     ├── montaj.py         # ffmpeg
     └── yeni_bolum.py     # hepsini sırayla çalıştırır, kontrol noktalarında bekler
 ```
 
 ## Yol haritası
-- [x] **Aşama 0:** Python 3.12 (`.venv`, uv ile), ffmpeg, `.env` (Gemini + ElevenLabs), `.gitignore`. Kontrol: `.venv/bin/python kod/test_anahtarlar.py`
+- [x] **Aşama 0:** Python 3.12 (`.venv`, uv ile), ffmpeg, `.env` (ElevenLabs), `.gitignore`. Kontrol: `.venv/bin/python kod/test_anahtarlar.py`
 - [x] **Hikâye planı** (Planlama oturumu): tür, dünya, karakterler, ana olay örgüsü, dallanmalar → `hikaye.md`.
 - [x] **1.** Senaryo JSON şeması + `senaryo.py` (şema doğrulama). Şema: `docs/superpowers/specs/2026-11-26-senaryo-semasi-design.md`. Kontrol: `python kod/senaryo.py bolumler/bolum_01/senaryo.json`, testler: `python kod/test_senaryo.py`. Diğer modüller `senaryo_yukle(yol)` kullanır.
-- [ ] **2.** `gorsel.py`: sahne başına 3 varyant, karakter referanslarıyla. ← **SIRADAKİ ADIM**
-- [ ] **3.** `ses.py`: cümle bazlı TTS + zaman damgaları. Her cümlenin `konusan` alanı (anlatıcı veya karakter) kendi sabit ses ID'siyle seslendirilir; karakter → ses eşlemesi ayrı dosyada (ör. `karakterler/sesler.json`).
+- [x] **2.** `gorsel.py`: sahne başına 3 varyant, karakter referanslarıyla + stil örneği `karakterler/stil.png` (elle üretim, API yok). Tasarım: `docs/superpowers/specs/2026-11-26-gorsel-design.md`. Kontrol: `python kod/gorsel.py bolumler/bolum_01/senaryo.json --durum`, testler: `python kod/test_gorsel.py`.
+- [ ] **3.** `ses.py`: cümle bazlı TTS + zaman damgaları. Her cümlenin `konusan` alanı (anlatıcı veya karakter) kendi sabit ses ID'siyle seslendirilir; karakter → ses eşlemesi ayrı dosyada (ör. `karakterler/sesler.json`). ← **SIRADAKİ ADIM**
 - [ ] **4.** `montaj.py`: 9:16, yavaş zoom, altyazı, müzik, seçenek kartı.
 - [ ] **5.** `yeni_bolum.py`: orkestrasyon ve kontrol noktaları.
 

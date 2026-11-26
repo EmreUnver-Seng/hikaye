@@ -51,8 +51,7 @@ def main() -> None:
           sys.prefix, ".venv içindeki python ile çalıştır")
 
     # Paketler
-    for modul, paket in [("google.genai", "google-genai"), ("elevenlabs", "elevenlabs"),
-                         ("dotenv", "python-dotenv")]:
+    for modul, paket in [("elevenlabs", "elevenlabs"), ("dotenv", "python-dotenv")]:
         try:
             var = importlib.util.find_spec(modul) is not None
         except ModuleNotFoundError:
@@ -61,6 +60,7 @@ def main() -> None:
 
     # Dış araçlar
     satir(bool(shutil.which("ffmpeg")), "ffmpeg", cozum="Mac: brew install ffmpeg / Windows: winget install Gyan.FFmpeg")
+    satir(bool(shutil.which("ffprobe")), "ffprobe (ffmpeg ile gelir)", cozum="ffmpeg'i yeniden kur")
     satir(bool(shutil.which("git")), "git")
 
     # Proje dosyaları
@@ -75,7 +75,7 @@ def main() -> None:
             if "=" in s and not s.strip().startswith("#"):
                 ad, deger = s.split("=", 1)
                 icerik[ad.strip()] = deger.strip()
-        for ad in ["GEMINI_API_KEY", "ELEVENLABS_API_KEY"]:
+        for ad in ["ELEVENLABS_API_KEY"]:
             dolu = bool(icerik.get(ad))
             satir(dolu, f".env: {ad}", "dolu" if dolu else "boş",
                   "anahtarı şifre yöneticisinden yapıştır")

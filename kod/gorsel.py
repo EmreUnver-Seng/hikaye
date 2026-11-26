@@ -1,0 +1,405 @@
+"""Görsel adımı: istekleri hazırlar, elle üretilen görselleri yerleştirir.
+
+Görseller Gemini uygulamasında elle üretilir (Gemini API ücretli olduğu için
+kullanılmaz). Bu modül:
+  1. Her sahne için hazır istek yazar: eklenecek referans görseller + prompt.
+  2. İndirilen görselleri sahne3_a/b/c.png adıyla 1080×1920'ye keserek yerleştirir.
+  3. Hangi sahnelerin hazır olduğunu gösterir.
+
+Kullanım:
+    python kod/gorsel.py bolumler/bolum_01/senaryo.json                  # istekler + durum
+    python kod/gorsel.py bolumler/bolum_01/senaryo.json --karakter riza  # karakter sayfası isteği
+    python kod/gorsel.py bolumler/bolum_01/senaryo.json --yerlestir 3 [dosya ...]
+    python kod/gorsel.py bolumler/bolum_01/senaryo.json --yerlestir riza [dosya]
+    python kod/gorsel.py bolumler/bolum_01/senaryo.json --durum
+
+Dosya verilmezse İndirilenler klasöründeki en yeni görseller önerilir.
+Tasarım: docs/superpowers/specs/2026-11-26-gorsel-design.md
+"""
+
+import argparse
+import re
+import shutil
+import subprocess
+import sys
+from collections import namedtuple
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from senaryo import KARAKTERLER, SenaryoHatasi, senaryo_yukle  # noqa: E402
+
+KOK = Path(__file__).resolve().parent.parent
+HARFLER = ("a", "b", "c")
+HEDEF_GEN, HEDEF_YUK = 1080, 1920
+ORAN_TOLERANS = 0.10  # 9:16'dan göreli sapma
+GORSEL_UZANTILARI = {".png", ".jpg", ".jpeg", ".webp"}
+
+STIL = ("Stil: 2 boyutlu dijital çizgi film illüstrasyonu (yetişkinlere yönelik animasyon "
+        "dizisi tarzı). Temiz, koyu renkli kontur çizgileri; iki tonlu hücre gölgelendirme "
+        "(cel shading) ile hacim. Saç buklelerinde, yüz hatlarında, kırışıklıklarda, kumaş "
+        "kıvrımlarında ve sakal gibi ayrıntılarda orta seviyede detay. Yarı gerçekçi oranlar, "
+        "ifadeli yüzler. Fotogerçekçi değil, 3D değil. "
+        "Görselde yazı, altyazı, konuşma balonu veya filigran olmasın "
+        "(sahne tarifinde açıkça geçen tabela yazısı hariç).")
+SAHNE_ISIK = ("Loş, sinematik ışık; mekânın ışık rengi (gece lambası, floresan, sodyum lamba) "
+              "karakterlerin üzerine de düşer.")
+STIL_KIMLIK = "stil"  # karakterler/stil.png: yalnızca çizim tarzı örneği
+
+
+def _stil_satiri(sira):
+    return (f"Ekteki {sira}. görsel yalnızca çizim tarzı ve detay seviyesi için örnektir: "
+            "içindeki kişiyi, kıyafeti, mekânı ve renkleri kullanma.")
+
+Karakter = namedtuple("Karakter", "ad gorunus")
+
+
+class GorselHatasi(Exception):
+    """Kullanıcıya Türkçe gösterilecek hata."""
+
+
+# --- Tarifler ve prompt ---
+
+def karakter_tarifleri(hikaye_metni):
+    """hikaye.md'deki karakter bölümlerinden {kimlik: Karakter} sözlüğü çıkarır.
+
+    Kimlik '- **Referans:** `karakterler/<kimlik>.png`' satırından, görünüş
+    '- **Görünüş:**' satırından, ad başlıktaki parantezden önceki kısımdan alınır.
+    """
+    tarifler = {}
+    for bolum in re.split(r"^### ", hikaye_metni, flags=re.MULTILINE)[1:]:
+        baslik = bolum.splitlines()[0]
+        kimlik = re.search(r"\*\*Referans:\*\*\s*`karakterler/(\w+)\.png`", bolum)
+        gorunus = re.search(r"^- \*\*Görünüş:\*\*\s*(.+)$", bolum, flags=re.MULTILINE)
+        if kimlik and gorunus:
+            ad = baslik.split("(")[0].strip()
+            tarifler[kimlik.group(1)] = Karakter(ad, gorunus.group(1).replace("**", "").strip())
+    return tarifler
+
+
+def referans_yolu(kok, kimlik):
+    return Path(kok) / "karakterler" / f"{kimlik}.png"
+
+
+def eksik_referanslar(kimlikler, kok):
+    return [k for k in kimlikler if not referans_yolu(kok, k).exists()]
+
+
+def sahne_promptu(sahne, karakterler, stil_var=False):
+    """Gemini uygulamasına yapıştırılacak sahne prompt'u.
+
+    stil_var: karakterler/stil.png karakter referanslarından sonra en sona eklenecek mi?
+    """
+    satirlar = [STIL, SAHNE_ISIK, "Dikey 9:16 kompozisyon."]
+    if sahne["karakterler"]:
+        satirlar.append("Karakterler (ekteki referans görsellere birebir uy: yüz, saç, "
+                        "kıyafet ve renkler aynı kalsın):")
+        for i, kimlik in enumerate(sahne["karakterler"], start=1):
+            if kimlik not in karakterler:
+                raise GorselHatasi(f"'{kimlik}' karakterinin tarifi hikaye.md'de bulunamadı "
+                                   "('### ...' bölümü, 'Görünüş' ve 'Referans' satırları gerekli).")
+            k = karakterler[kimlik]
+            satirlar.append(f"- Ekteki {i}. görsel: {k.ad} — {k.gorunus}")
+    if stil_var:
+        satirlar.append(_stil_satiri(len(sahne["karakterler"]) + 1))
+    satirlar.append(f"Sahne: {sahne['gorsel']}")
+    satirlar.append("Bu sahneyi 3 farklı görsel olarak, ayrı ayrı üret: kamera açısı ve kompozisyon "
+                    "farklı olsun; karakterlerin görünüşü, kıyafetleri ve renkleri aynı kalsın.")
+    return "\n".join(satirlar)
+
+
+def karakter_promptu(karakter, stil_var=False):
+    """Karakter referans sayfası prompt'u (beyaz arka plan, boydan)."""
+    satirlar = [STIL]
+    if stil_var:
+        satirlar.append(_stil_satiri(1))
+    satirlar += [
+        f"Karakter referans sayfası: {karakter.ad}.",
+        f"Görünüş: {karakter.gorunus}",
+        "Tek figür, boydan, önden, nötr duruş, düz ve nötr ışık. Düz beyaz arka plan, dekor yok.",
+        "Bunu 3 farklı görsel olarak, ayrı ayrı üret (3 aday): yüz ifadesi ve duruşta küçük "
+        "farklar olsun; görünüş, kıyafet ve renkler aynı kalsın.",
+    ]
+    return "\n".join(satirlar)
+
+
+# --- Dosya adları ---
+
+def varyant_yolu(klasor, no, harf):
+    return Path(klasor) / f"sahne{no}_{harf}.png"
+
+
+def hedef_yollar(klasor, no, adet, yeniden):
+    """Yerleştirilecek dosyaların hedefleri: boş harfler sırayla; yeniden ise a'dan."""
+    if adet > len(HARFLER):
+        raise GorselHatasi(f"Bir sahnede en fazla {len(HARFLER)} varyant (a, b, c) olur, "
+                           f"{adet} dosya verildi.")
+    if yeniden:
+        return [varyant_yolu(klasor, no, h) for h in HARFLER[:adet]]
+    bos = [varyant_yolu(klasor, no, h) for h in HARFLER
+           if not varyant_yolu(klasor, no, h).exists()]
+    if len(bos) < adet:
+        raise GorselHatasi(f"Sahne {no} için {len(bos)} boş yer var, {adet} dosya verildi. "
+                           "Var olanların üzerine yazmak için --yeniden ekle.")
+    return bos[:adet]
+
+
+def oran_uyarisi(gen, yuk):
+    """Kaynak oranı 9:16'dan çok farklıysa uyarı metni, değilse None."""
+    sapma = abs((gen / yuk) / (HEDEF_GEN / HEDEF_YUK) - 1)
+    if sapma > ORAN_TOLERANS:
+        return (f"kaynak {gen}×{yuk}, 9:16 değil; kesimde kenarlardan önemli bir kısım "
+                "kaybolacak. Gerekirse Gemini'den dikey (9:16) iste.")
+    return None
+
+
+# --- İstekler ve durum metinleri ---
+
+def _senaryo_komutu(veri):
+    return f"python kod/gorsel.py bolumler/bolum_{veri['bolum']:02d}/senaryo.json"
+
+
+def istekler_metni(veri, karakterler, kok):
+    """Bölümün tüm sahneleri için markdown istek listesi."""
+    komut = _senaryo_komutu(veri)
+    satirlar = [
+        f"# Bölüm {veri['bolum']}: {veri['baslik']} — görsel istekleri",
+        "",
+        "Her sahne için: Gemini uygulamasında yeni sohbet aç, referans görselleri sırayla "
+        "ekle, prompt'u yapıştır, **3 farklı görsel** üret ve indir. "
+        f"Sonra: `{komut} --yerlestir <sahne no>`",
+        "",
+    ]
+    stil_var = referans_yolu(kok, STIL_KIMLIK).exists()
+    for sahne in veri["sahneler"]:
+        no = sahne["no"]
+        satirlar.append(f"## Sahne {no}")
+        eksik = eksik_referanslar(sahne["karakterler"], kok)
+        if eksik:
+            satirlar.append(f"Referans görseli eksik: {', '.join(eksik)}. Önce karakter sayfası üret:")
+            satirlar += [f"- `{komut} --karakter {k}`" for k in eksik]
+        else:
+            refler = [f"karakterler/{k}.png" for k in sahne["karakterler"]]
+            if stil_var:
+                refler.append(f"karakterler/{STIL_KIMLIK}.png")
+            satirlar.append(f"Referans: {', '.join(refler) if refler else 'yok'}")
+            satirlar += ["```", sahne_promptu(sahne, karakterler, stil_var), "```"]
+        satirlar.append("")
+    return "\n".join(satirlar)
+
+
+def durum_metni(veri, klasor, kok):
+    """Sahne başına hazır varyant sayısı ve eksik referanslar."""
+    satirlar = []
+    for sahne in veri["sahneler"]:
+        hazir = [h for h in HARFLER if varyant_yolu(klasor, sahne["no"], h).exists()]
+        ek = f" ({', '.join(hazir)})" if hazir else ""
+        satirlar.append(f"  Sahne {sahne['no']}: {len(hazir)}/{len(HARFLER)}{ek}")
+    kullanilan = sorted({k for s in veri["sahneler"] for k in s["karakterler"]})
+    eksik = eksik_referanslar(kullanilan, kok)
+    if eksik:
+        satirlar.append(f"  Eksik referans görseli: {', '.join(eksik)}")
+    return "\n".join(satirlar)
+
+
+# --- ffmpeg ile yerleştirme ---
+
+def _program(ad):
+    yol = shutil.which(ad)
+    if not yol:
+        raise GorselHatasi(f"{ad} bulunamadı. Kurulum: KULLANIM.md (Windows: winget install Gyan.FFmpeg).")
+    return yol
+
+
+def boyut_oku(dosya):
+    """Görselin (genişlik, yükseklik) değeri; okunamazsa GorselHatasi."""
+    dosya = Path(dosya)
+    if not dosya.is_file():
+        raise GorselHatasi(f"Dosya bulunamadı: {dosya}")
+    sonuc = subprocess.run(
+        [_program("ffprobe"), "-v", "error", "-select_streams", "v:0",
+         "-show_entries", "stream=width,height", "-of", "csv=p=0:s=x", str(dosya)],
+        capture_output=True, encoding="utf-8", errors="replace")
+    eslesme = re.match(r"(\d+)x(\d+)", sonuc.stdout.strip())
+    okunamadi = GorselHatasi(f"Görsel okunamadı: {dosya} (bozuk, yarım inmiş ya da görsel değil).")
+    if sonuc.returncode != 0 or not eslesme or "0" in eslesme.groups():
+        raise okunamadi
+    # ffprobe yalnızca dosyanın başına bakar; yarım inmiş dosyayı yakalamak için tamamını çözdür.
+    cozum = subprocess.run([_program("ffmpeg"), "-v", "error", "-i", str(dosya), "-f", "null", "-"],
+                           capture_output=True, encoding="utf-8", errors="replace")
+    if cozum.returncode != 0 or cozum.stderr.strip():
+        raise okunamadi
+    return int(eslesme.group(1)), int(eslesme.group(2))
+
+
+def _donustur(kaynak, hedef, filtre=None):
+    """ffmpeg ile PNG'ye çevirir; önce geçici dosyaya yazar, başarılıysa yerine koyar."""
+    hedef = Path(hedef)
+    hedef.parent.mkdir(parents=True, exist_ok=True)
+    gecici = hedef.with_name(hedef.stem + ".gecici.png")
+    komut = [_program("ffmpeg"), "-v", "error", "-y", "-i", str(kaynak)]
+    if filtre:
+        komut += ["-vf", filtre]
+    komut += ["-frames:v", "1", str(gecici)]
+    sonuc = subprocess.run(komut, capture_output=True, encoding="utf-8", errors="replace")
+    if sonuc.returncode != 0 or not gecici.exists():
+        gecici.unlink(missing_ok=True)
+        ayrinti = "\n".join(sonuc.stderr.strip().splitlines()[:3])
+        raise GorselHatasi(f"ffmpeg dönüştüremedi: {kaynak}\n{ayrinti}")
+    gecici.replace(hedef)
+
+
+def sahneye_yerlestir(kaynak, hedef):
+    """Kaynağı 1080×1920'ye ölçekleyip ortadan keser. Oran uyarısını (veya None) döndürür."""
+    gen, yuk = boyut_oku(kaynak)
+    _donustur(kaynak, hedef,
+              f"scale={HEDEF_GEN}:{HEDEF_YUK}:force_original_aspect_ratio=increase,"
+              f"crop={HEDEF_GEN}:{HEDEF_YUK}")
+    return oran_uyarisi(gen, yuk)
+
+
+def karaktere_yerlestir(kaynak, hedef):
+    """Karakter referansını kesmeden PNG'ye çevirir."""
+    boyut_oku(kaynak)
+    _donustur(kaynak, hedef)
+
+
+def en_yeni_gorseller(klasor, adet):
+    """Klasördeki en yeni `adet` görsel (yeniden eskiye)."""
+    klasor = Path(klasor)
+    if not klasor.is_dir():
+        raise GorselHatasi(f"Klasör bulunamadı: {klasor}. Dosyaları komutta ver.")
+    gorseller = [p for p in klasor.iterdir()
+                 if p.is_file() and p.suffix.lower() in GORSEL_UZANTILARI]
+    gorseller.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    if len(gorseller) < adet:
+        raise GorselHatasi(f"{klasor} içinde {adet} görsel gerekiyordu, {len(gorseller)} bulundu.")
+    return gorseller[:adet]
+
+
+# --- Komut satırı ---
+
+def _dosyalari_sec(dosyalar, adet):
+    """Verilen dosyalar ya da İndirilenler'deki en yeniler (onayla)."""
+    if dosyalar:
+        return [Path(d) for d in dosyalar]
+    secilen = en_yeni_gorseller(Path.home() / "Downloads", adet)
+    print("İndirilenler'deki en yeni görseller:")
+    for d in secilen:
+        print(f"  - {d.name}")
+    if input("Bunlar yerleştirilsin mi? (e/h) ").strip().lower() not in ("e", "evet"):
+        raise GorselHatasi("Vazgeçildi, hiçbir dosya yerleştirilmedi.")
+    return secilen
+
+
+def _sahneye(veri, gorseller, no, dosyalar, yeniden):
+    if not 1 <= no <= len(veri["sahneler"]):
+        raise GorselHatasi(f"Sahne {no} yok; bu bölümde 1–{len(veri['sahneler'])} arası sahne var.")
+    if dosyalar:
+        adet = len(dosyalar)
+    elif yeniden:
+        adet = len(HARFLER)
+    else:
+        adet = sum(not varyant_yolu(gorseller, no, h).exists() for h in HARFLER)
+        if adet == 0:
+            raise GorselHatasi(f"Sahne {no} dolu (a, b, c). Üzerine yazmak için --yeniden ekle.")
+    hedefler = hedef_yollar(gorseller, no, adet, yeniden)
+    kaynaklar = _dosyalari_sec(dosyalar, adet)
+    for kaynak in kaynaklar:  # hiçbir şey yazmadan önce hepsini kontrol et
+        boyut_oku(kaynak)
+    for kaynak, hedef in zip(kaynaklar, hedefler):
+        uyari = sahneye_yerlestir(kaynak, hedef)
+        print(f"✓ {kaynak.name} → {hedef.relative_to(KOK) if hedef.is_relative_to(KOK) else hedef}")
+        if uyari:
+            print(f"  ! {uyari}")
+
+
+def _karaktere(kimlik, dosyalar, yeniden):
+    if len(dosyalar) > 1:
+        raise GorselHatasi("Karakter referansı için tek dosya ver.")
+    hedef = referans_yolu(KOK, kimlik)
+    if hedef.exists() and not yeniden:
+        raise GorselHatasi(f"karakterler/{kimlik}.png zaten var. Değiştirmek için --yeniden ekle.")
+    kaynak = _dosyalari_sec(dosyalar, 1)[0]
+    karaktere_yerlestir(kaynak, hedef)
+    print(f"✓ {kaynak.name} → karakterler/{kimlik}.png")
+
+
+def main(argv):
+    ayristirici = argparse.ArgumentParser(
+        prog="gorsel.py", description="Görsel istekleri hazırlar ve görselleri yerleştirir.")
+    ayristirici.add_argument("senaryo", help="bolumler/bolum_NN/senaryo.json")
+    grup = ayristirici.add_mutually_exclusive_group()
+    grup.add_argument("--karakter", metavar="KIMLIK", help="karakter sayfası isteğini göster")
+    grup.add_argument("--yerlestir", nargs="+", metavar=("HEDEF", "DOSYA"),
+                      help="sahne numarası veya karakter kimliği, ardından dosyalar")
+    grup.add_argument("--durum", action="store_true", help="hazır görselleri göster")
+    ayristirici.add_argument("--yeniden", action="store_true",
+                             help="var olan görsellerin üzerine yaz")
+    args = ayristirici.parse_args(argv)
+
+    senaryo = Path(args.senaryo)
+    try:
+        veri = senaryo_yukle(senaryo)
+    except SenaryoHatasi as e:
+        print(f"✗ {senaryo} geçersiz ({len(e.hatalar)} hata):")
+        for h in e.hatalar:
+            print(f"  - {h}")
+        return 1
+    gorseller = senaryo.parent / "gorseller"
+
+    try:
+        if args.yerlestir:
+            hedef, dosyalar = args.yerlestir[0], args.yerlestir[1:]
+            if hedef.isascii() and hedef.isdecimal():
+                _sahneye(veri, gorseller, int(hedef), dosyalar, args.yeniden)
+            elif hedef in KARAKTERLER or hedef == STIL_KIMLIK:
+                _karaktere(hedef, dosyalar, args.yeniden)
+            else:
+                raise GorselHatasi(f"Bilinmeyen hedef '{hedef}': sahne numarası, karakter "
+                                   f"kimliği ({', '.join(KARAKTERLER)}) ya da '{STIL_KIMLIK}' olmalı.")
+            return 0
+        if args.durum:
+            print(f"Bölüm {veri['bolum']} görselleri ({gorseller}):")
+            print(durum_metni(veri, gorseller, KOK))
+            return 0
+
+        hikaye = KOK / "hikaye.md"
+        if not hikaye.exists():
+            raise GorselHatasi(f"hikaye.md bulunamadı: {hikaye}")
+        tarifler = karakter_tarifleri(hikaye.read_text(encoding="utf-8"))
+        if args.karakter:
+            if args.karakter not in tarifler:
+                raise GorselHatasi(f"'{args.karakter}' tarifi hikaye.md'de yok. "
+                                   f"Kimlikler: {', '.join(sorted(tarifler))}.")
+            stil_var = referans_yolu(KOK, STIL_KIMLIK).exists()
+            ek = f" karakterler/{STIL_KIMLIK}.png dosyasını ekle," if stil_var else ""
+            print(f"Gemini uygulamasında yeni sohbet aç,{ek} bu prompt'u yapıştır, 3 aday üret:\n")
+            print(karakter_promptu(tarifler[args.karakter], stil_var))
+            print(f"\nBeğendiğini indir, sonra: {_senaryo_komutu(veri)} "
+                  f"--yerlestir {args.karakter} [dosya]")
+            return 0
+
+        metin = istekler_metni(veri, tarifler, KOK)
+        gorseller.mkdir(parents=True, exist_ok=True)
+        (gorseller / "istekler.md").write_text(metin, encoding="utf-8")
+        print(metin)
+        print(f"Kaydedildi: {gorseller / 'istekler.md'}\n")
+        print("Durum:")
+        print(durum_metni(veri, gorseller, KOK))
+        return 0
+    except GorselHatasi as e:
+        print(f"✗ {e}")
+        return 1
+    except (EOFError, KeyboardInterrupt):
+        print("\n✗ Vazgeçildi, hiçbir dosya yerleştirilmedi.")
+        return 1
+    except OSError as e:
+        print(f"✗ Dosya işlemi başarısız: {e.filename or ''} ({e.strerror or e}). "
+              "Dosya başka bir programda açık ya da klasöre erişim izni yok olabilir.")
+        return 1
+
+
+if __name__ == "__main__":
+    # Windows konsolunda Türkçe karakterler ve ✓ işareti bozulmasın.
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.exit(main(sys.argv[1:]))

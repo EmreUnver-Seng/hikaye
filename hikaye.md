@@ -26,7 +26,7 @@
 
 
 ## Karakterler
-Toplam 6 karakter. Stil hepsinde aynı: 2B, düz renk, kalın siyah hat. Kıyafetler bütün sezon boyunca **değişmez** (tutarlılık için).
+Toplam 6 karakter. Stil hepsinde aynı: 2B dijital çizgi film (yetişkin animasyon dizisi tarzı), temiz koyu kontur, iki tonlu gölgelendirme, saç/yüz/kumaşta orta seviye detay; çizim tarzı ve detay seviyesi örneği `karakterler/stil.png` (görünüş için değil). Kıyafetler bütün sezon boyunca **değişmez** (tutarlılık için).
 
 ### Sen (ana karakter)
 - **Rol:** İsimsiz ana karakter; izleyicinin kendisi. Anlatıcı "sen" diye hitap eder. Nadide Teyze'yi hatırlayan tek kişi.

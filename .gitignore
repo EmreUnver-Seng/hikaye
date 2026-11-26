@@ -13,3 +13,6 @@ bolumler/*/*.mp4
 
 # macOS
 .DS_Store
+
+# Stil örneği görseli (kullanıcının dışarıdan verdiği görsel; cihazlar arası elle kopyalanır)
+karakterler/stil.png
