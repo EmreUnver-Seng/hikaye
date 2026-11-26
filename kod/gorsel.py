@@ -84,10 +84,51 @@ def eksik_referanslar(kimlikler, kok):
     return [k for k in kimlikler if not referans_yolu(kok, k).exists()]
 
 
-def sahne_promptu(sahne, karakterler, stil_var=False):
+# hikaye.md'de mekân kimliği → ("Mekânlar" maddesinin adı, "Renk paleti" satırının adı)
+MEKAN_BASLIKLARI = {
+    "otobus": ("Otobüsün içi", "Otobüs içi"),
+    "tesis": ("Gece tesisi", "Tesis"),
+    "istasyon": ("Benzin istasyonu", "Dış mekân"),
+    "dis": (None, "Dış mekân"),
+}
+
+
+def _bolum_metni(hikaye_metni, baslik):
+    """'### <baslik>' ile başlayan bölümün metni (bir sonraki ##/### başlığına kadar)."""
+    eslesme = re.search(rf"^### {re.escape(baslik)}.*?$(.*?)(?=^#{{2,3}} |\Z)",
+                        hikaye_metni, flags=re.MULTILINE | re.DOTALL)
+    return eslesme.group(1) if eslesme else ""
+
+
+def mekan_tarifleri(hikaye_metni):
+    """hikaye.md'den {mekan kimliği: tarif} sözlüğü (mekân maddesi + renk paleti satırı)."""
+    maddeler = {}
+    for ad, tarif in re.findall(r"^\d+\.\s+\*\*(.+?):\*\*\s*(.+)$",
+                                _bolum_metni(hikaye_metni, "Mekânlar"), flags=re.MULTILINE):
+        # Parantez içleri yazar notudur ("(kurgusal)", "(ipucu olarak kullanılır)"); prompt'a girmez.
+        temiz = re.sub(r"\s*\([^)]*\)", "", tarif.replace("**", ""))
+        maddeler[ad.split("(")[0].strip()] = temiz.strip()
+    paletler = dict(re.findall(r"^- (.+?):\s*(.+)$",
+                               _bolum_metni(hikaye_metni, "Renk paleti"), flags=re.MULTILINE))
+    tarifler = {}
+    for kimlik, (madde, palet) in MEKAN_BASLIKLARI.items():
+        parcalar = []
+        if madde and madde in maddeler:
+            parcalar.append(f"{madde}: {maddeler[madde]}")
+        elif not madde:
+            parcalar.append("Gece, dış mekân.")
+        if palet in paletler:
+            parcalar.append(f"Renkler: {paletler[palet].strip()}")
+        if len(parcalar) > (0 if madde else 1):
+            tarifler[kimlik] = " ".join(parcalar)
+    return tarifler
+
+
+def sahne_promptu(sahne, karakterler, stil_var=False, mekanlar=None):
     """Gemini uygulamasına yapıştırılacak sahne prompt'u.
 
     stil_var: karakterler/stil.png karakter referanslarından sonra en sona eklenecek mi?
+    mekanlar: mekan_tarifleri() sonucu; sahnede 'mekan' varsa tarifi eklenir.
     """
     satirlar = [STIL, SAHNE_ISIK, "Dikey 9:16 kompozisyon."]
     if sahne["karakterler"]:
@@ -101,7 +142,11 @@ def sahne_promptu(sahne, karakterler, stil_var=False):
             satirlar.append(f"- Ekteki {i}. görsel: {k.ad} — {k.gorunus}")
     if stil_var:
         satirlar.append(_stil_satiri(len(sahne["karakterler"]) + 1))
+    mekan = sahne.get("mekan")
+    if mekan and mekanlar and mekan in mekanlar:
+        satirlar.append(f"Mekân: {mekanlar[mekan]}")
     satirlar.append(f"Sahne: {sahne['gorsel']}")
+    satirlar.append("Sahne tarifindeki pozlara, hareketlere ve bakış yönüne birebir uy.")
     satirlar.append("Bu sahneyi 3 farklı görsel olarak, ayrı ayrı üret: kamera açısı ve kompozisyon "
                     "farklı olsun; karakterlerin görünüşü, kıyafetleri ve renkleri aynı kalsın.")
     return "\n".join(satirlar)
@@ -158,7 +203,7 @@ def _senaryo_komutu(veri):
     return f"python kod/gorsel.py bolumler/bolum_{veri['bolum']:02d}/senaryo.json"
 
 
-def istekler_metni(veri, karakterler, kok):
+def istekler_metni(veri, karakterler, kok, mekanlar=None):
     """Bölümün tüm sahneleri için markdown istek listesi."""
     komut = _senaryo_komutu(veri)
     satirlar = [
@@ -182,7 +227,7 @@ def istekler_metni(veri, karakterler, kok):
             if stil_var:
                 refler.append(f"karakterler/{STIL_KIMLIK}.png")
             satirlar.append(f"Referans: {', '.join(refler) if refler else 'yok'}")
-            satirlar += ["```", sahne_promptu(sahne, karakterler, stil_var), "```"]
+            satirlar += ["```", sahne_promptu(sahne, karakterler, stil_var, mekanlar), "```"]
         satirlar.append("")
     return "\n".join(satirlar)
 
@@ -366,7 +411,8 @@ def main(argv):
         hikaye = KOK / "hikaye.md"
         if not hikaye.exists():
             raise GorselHatasi(f"hikaye.md bulunamadı: {hikaye}")
-        tarifler = karakter_tarifleri(hikaye.read_text(encoding="utf-8"))
+        hikaye_metni = hikaye.read_text(encoding="utf-8")
+        tarifler = karakter_tarifleri(hikaye_metni)
         if args.karakter:
             if args.karakter not in tarifler:
                 raise GorselHatasi(f"'{args.karakter}' tarifi hikaye.md'de yok. "
@@ -379,7 +425,7 @@ def main(argv):
                   f"--yerlestir {args.karakter} [dosya]")
             return 0
 
-        metin = istekler_metni(veri, tarifler, KOK)
+        metin = istekler_metni(veri, tarifler, KOK, mekan_tarifleri(hikaye_metni))
         gorseller.mkdir(parents=True, exist_ok=True)
         (gorseller / "istekler.md").write_text(metin, encoding="utf-8")
         print(metin)

@@ -4,6 +4,7 @@
   "sahneler": [
     {
       "no": 1,
+      "mekan": "otobus",
       "gorsel": "Gece, otobüsün içi, mor-mavi gece lambaları. Yakın plan: 13 numaralı lacivert koltuk boş. Yanındaki 12 numarada hardal sarısı kapüşonlu genç, şaşkın gözlerle boş koltuğa bakıyor.",
       "karakterler": ["sen"],
       "cumleler": [
@@ -13,6 +14,7 @@
     },
     {
       "no": 2,
+      "mekan": "dis",
       "gorsel": "Gece otogarı, 23:30. Peronda üzerinde sarı yıldız logosu olan lacivert şehirlerarası otobüs, ön camında 'Gece Yıldızı Turizm'. Hardal sarısı kapüşonlu genç, sırt çantasıyla otobüsün açık kapısına yürüyor. Sodyum lamba turuncusu ışık.",
       "karakterler": ["sen"],
       "cumleler": [
@@ -22,6 +24,7 @@
     },
     {
       "no": 3,
+      "mekan": "otobus",
       "gorsel": "Otobüsün içi. Bordo hırkalı, gri topuzlu, altın gözlüklü yaşlı kadın 13 numaraya oturmuş, kucağında kahverengi deri çanta, gülümseyerek konuşuyor ama başını omzunun üzerinden arkaya çevirmiş. Yanında 12 numarada hardal sarısı kapüşonlu genç.",
       "karakterler": ["sen", "nadide"],
       "cumleler": [
@@ -31,6 +34,7 @@
     },
     {
       "no": 4,
+      "mekan": "otobus",
       "gorsel": "Otobüs koridoru. Kırmızı yelekli, göğsünde sarı yıldız logosu olan jöleli saçlı genç muavin, elinde tabletle biletlere bakarak aceleyle yürüyor.",
       "karakterler": ["kerem"],
       "cumleler": [
@@ -40,6 +44,7 @@
     },
     {
       "no": 5,
+      "mekan": "otobus",
       "gorsel": "Ön sıralar. Lacivert takım elbiseli, gevşek bordo kravatlı, kısa sakallı adam akıllı telefonunu kulağına bastırmış, sinirli. Birkaç sıra arkada yeşil hemşire formalı, bej trençkotlu, at kuyruklu kızıl-kahve saçlı kadın arkaya, yaşlı kadına doğru bakıyor.",
       "karakterler": ["murat", "ayla"],
       "cumleler": [
@@ -50,6 +55,7 @@
     },
     {
       "no": 6,
+      "mekan": "otobus",
       "gorsel": "Şoför kabini, karanlık dağ yolu ön camda. Ön camda asılı tesbih. Dikiz aynasında gri yelekli, kalın gri bıyıklı şoförün sert gözleri görünüyor.",
       "karakterler": ["riza"],
       "cumleler": [
@@ -59,6 +65,7 @@
     },
     {
       "no": 7,
+      "mekan": "otobus",
       "gorsel": "Yakın plan: yaşlı kadının titreyen elleri, bordo hırka kolları, hardal sarısı kapüşonlu gencin ellerine kahverengi kalın bir zarf uzatıyor. Arka planda mor-mavi gece lambası.",
       "karakterler": ["sen", "nadide"],
       "cumleler": [
@@ -68,6 +75,7 @@
     },
     {
       "no": 8,
+      "mekan": "tesis",
       "gorsel": "Gece tesisi dışarıdan: 'Kuşkonmaz Tesisleri' tabelası, soluk yeşilimsi floresan ışıklı, neredeyse boş lokanta. Otoparkta lacivert otobüs, yolcular inmiş, silüet hâlinde.",
       "karakterler": [],
       "cumleler": [
@@ -76,6 +84,7 @@
     },
     {
       "no": 9,
+      "mekan": "otobus",
       "gorsel": "Otobüsün içi, mor-mavi ışık. Hardal sarısı kapüşonlu genç koridorda ayakta, donmuş hâlde 13 numaralı boş koltuğa bakıyor. Koltukta ne çanta ne hırka var.",
       "karakterler": ["sen"],
       "cumleler": [
@@ -85,6 +94,7 @@
     },
     {
       "no": 10,
+      "mekan": "otobus",
       "gorsel": "Kırmızı yelekli muavin koridorda, tableti göğsüne bastırmış, gülümsüyor ama gözlerini kaçırıyor. Önünde hardal sarısı kapüşonlu genç.",
       "karakterler": ["sen", "kerem"],
       "cumleler": [
@@ -94,6 +104,7 @@
     },
     {
       "no": 11,
+      "mekan": "otobus",
       "gorsel": "12 numaralı koltukta hardal sarısı kapüşonlu genç, kucağında kahverengi zarf, iki eliyle tutuyor. Cam dışında karanlık dağ silüetleri. Ön sıralardan lacivert takım elbiseli adam omzunun üzerinden bakıyor.",
       "karakterler": ["sen", "murat"],
       "cumleler": [

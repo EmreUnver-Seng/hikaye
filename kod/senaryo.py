@@ -18,6 +18,8 @@ from pathlib import Path
 # Karakter kimlikleri; referans görseli karakterler/<kimlik>.png
 KARAKTERLER = ("sen", "nadide", "riza", "kerem", "murat", "ayla")
 ANLATICI = "anlatici"
+# Mekân kimlikleri; tarifleri hikaye.md'deki "Mekânlar" ve "Renk paleti" bölümlerinde.
+MEKANLAR = ("otobus", "tesis", "istasyon", "dis")
 
 SAHNE_EN_AZ, SAHNE_EN_COK = 8, 12
 SURE_EN_AZ, SURE_EN_COK = 45, 90  # saniye
@@ -28,6 +30,7 @@ SON_BOLUM = 8  # finalde seçenek yok, yalnızca soru
 
 KOK_ALANLAR = {"bolum", "baslik", "sahneler", "ikilem"}
 SAHNE_ALANLARI = {"no", "gorsel", "karakterler", "cumleler"}
+SAHNE_ISTEGE_BAGLI = {"mekan"}  # yoksa uyarı verilir
 CUMLE_ALANLARI = {"konusan", "metin"}
 IKILEM_ALANLARI = {"soru", "secenekler"}
 
@@ -151,8 +154,17 @@ def _bolum_dogrula(d, bolum, klasor_adi):
 def _sahne_dogrula(d, sahne, i):
     """Bir sahneyi doğrular; ('sen' cümle sayısı, kelime sayısı) döndürür."""
     konum = f"sahne {i + 1}"
-    if not d.nesne(sahne, konum, SAHNE_ALANLARI):
+    if not d.nesne(sahne, konum, SAHNE_ALANLARI, SAHNE_ALANLARI | SAHNE_ISTEGE_BAGLI):
         return 0, 0
+
+    if "mekan" not in sahne:
+        d.uyari(konum, f"'mekan' yazılmamış ({', '.join(MEKANLAR)}); görsel prompt'una "
+                       "mekân tarifi eklenmeyecek.")
+    elif not isinstance(sahne["mekan"], str):
+        d.hata(f"{konum}, mekan", f"yazı olmalı, {_tur_adi(sahne['mekan'])} bulundu.")
+    elif sahne["mekan"] not in MEKANLAR:
+        d.hata(f"{konum}, mekan", f"bilinmeyen mekân '{sahne['mekan']}'. "
+                                 f"Geçerli: {', '.join(MEKANLAR)}.")
 
     if "no" in sahne:
         no = sahne["no"]

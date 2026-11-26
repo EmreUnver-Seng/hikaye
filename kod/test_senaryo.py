@@ -25,6 +25,7 @@ def gecerli_ornek(bolum=1):
         sahneler.append({
             "no": no,
             "gorsel": f"Sahne {no}: gece otobüsünün içi, mor-mavi ışık.",
+            "mekan": "otobus",
             "karakterler": ["sen", "nadide"],
             "cumleler": [
                 {"konusan": "anlatici",
@@ -278,6 +279,25 @@ def test_senaryo_yukle_firlatir():
             assert e.hatalar
         else:
             raise AssertionError("SenaryoHatasi fırlatılmadı")
+
+
+def test_mekan_bilinmeyen_deger():
+    hata_icerir(bozuk(lambda v: v["sahneler"][0].update(mekan="uzay")), "mekan")
+
+
+def test_mekan_yazi_olmali():
+    hata_icerir(bozuk(lambda v: v["sahneler"][0].update(mekan=3)), "mekan")
+
+
+def test_mekan_eksikse_uyari():
+    uyari_icerir(bozuk(lambda v: v["sahneler"][2].pop("mekan")), "sahne 3")
+    uyari_icerir(bozuk(lambda v: v["sahneler"][2].pop("mekan")), "mekan")
+
+
+def test_mekan_gecerli_degerler():
+    for m in ("otobus", "tesis", "istasyon", "dis"):
+        hatalar, _ = dogrula(bozuk(lambda v, m=m: v["sahneler"][0].update(mekan=m)))
+        assert hatalar == [], (m, hatalar)
 
 
 if __name__ == "__main__":

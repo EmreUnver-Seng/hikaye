@@ -27,6 +27,7 @@ from gorsel import (  # noqa: E402
     istekler_metni,
     karakter_promptu,
     karakter_tarifleri,
+    mekan_tarifleri,
     karaktere_yerlestir,
     oran_uyarisi,
     sahne_promptu,
@@ -362,6 +363,49 @@ def test_promptlar_uc_farkli_gorsel_ister():
         son = p.strip().splitlines()[-1]
         assert "3 farklı görsel" in son, son
     assert "kamera açısı" in sahne_promptu(ornek_sahne(1, ["sen"]), t)
+
+
+# --- Mekân tarifi (hikaye.md: Mekânlar + Renk paleti) ---
+
+def test_mekan_tarifleri_hikaye_mdden():
+    m = mekan_tarifleri(HIKAYE)
+    assert set(m) == {"otobus", "tesis", "istasyon", "dis"}, set(m)
+    assert "lacivert kumaş koltuklar" in m["otobus"] and "mor" in m["otobus"]
+    assert "floresan" in m["tesis"].lower() and "yeşilimsi" in m["tesis"]
+    assert "tek pompalı" in m["istasyon"] and "sodyum" in m["istasyon"]
+    assert "dağ silüetleri" in m["dis"]
+    assert "**" not in "".join(m.values())
+    assert "kurgusal" not in m["tesis"] and "ipucu" not in m["otobus"]  # yazar notları prompta girmez
+
+
+def test_sahne_promptu_mekan_ekler():
+    t = karakter_tarifleri(HIKAYE)
+    sahne = dict(ornek_sahne(1, ["sen"]), mekan="otobus")
+    p = sahne_promptu(sahne, t, mekanlar=mekan_tarifleri(HIKAYE))
+    assert "Mekân:" in p and "lacivert kumaş koltuklar" in p, p
+    assert p.index("Mekân:") < p.index("Sahne:")
+
+
+def test_sahne_promptu_mekansiz():
+    t = karakter_tarifleri(HIKAYE)
+    p = sahne_promptu(ornek_sahne(1, ["sen"]), t, mekanlar=mekan_tarifleri(HIKAYE))
+    assert "Mekân:" not in p
+
+
+def test_sahne_promptu_poz_vurgusu():
+    p = sahne_promptu(ornek_sahne(1, ["sen"]), karakter_tarifleri(HIKAYE))
+    assert "bakış yönü" in p
+
+
+def test_istekler_mekan_ekler():
+    with tempfile.TemporaryDirectory() as d:
+        kok = Path(d)
+        bos_dosya(kok / "karakterler" / "sen.png")
+        veri = ornek_veri()
+        veri["sahneler"][0]["mekan"] = "tesis"
+        metin = istekler_metni(veri, karakter_tarifleri(HIKAYE), kok, mekan_tarifleri(HIKAYE))
+        s1 = metin[metin.index("## Sahne 1"):metin.index("## Sahne 2")]
+        assert "Kuşkonmaz" in s1, s1
 
 
 if __name__ == "__main__":

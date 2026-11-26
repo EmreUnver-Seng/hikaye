@@ -22,6 +22,7 @@ Her bölümün senaryosu `bolumler/bolum_NN/senaryo.json` dosyasında durur. Bu 
   "sahneler": [
     {
       "no": 1,
+      "mekan": "otobus",
       "gorsel": "İngilizce veya Türkçe görsel tarifi",
       "karakterler": ["sen", "nadide"],
       "cumleler": [
@@ -36,6 +37,8 @@ Her bölümün senaryosu `bolumler/bolum_NN/senaryo.json` dosyasında durur. Bu 
   }
 }
 ```
+Mekân (`mekan`, isteğe bağlı ama önerilir): `otobus, tesis, istasyon, dis` (`dis` = otogar, yol gibi gece dış mekânı). Tarifi `hikaye.md`'deki "Mekânlar" ve "Renk paleti" bölümlerinden alınır ve `gorsel.py` tarafından prompt'a eklenir; böylece koltuk rengi gibi ayrıntılar sahne tarifinde yazmasa da tutarlı kalır.
+
 Karakter kimlikleri: `sen, nadide, riza, kerem, murat, ayla` (referans: `karakterler/<kimlik>.png`). Konuşan ayrıca `anlatici` olabilir.
 
 ## Kontroller
@@ -51,6 +54,7 @@ Karakter kimlikleri: `sen, nadide, riza, kerem, murat, ayla` (referans: `karakte
 **Uyarı** (dosya geçerli, gözden geçir):
 - Tahmini süre (kelime sayısı / ~2,5 kelime/sn) 45–90 sn dışında.
 - 3'ten fazla "sen" cümlesi.
+- Sahnede `mekan` yazılmamış (bilinmeyen değer ise **hata**).
 - Tek cümle 25 kelimeden uzun (altyazıya sığmaz).
 
 ## Kullanım
