@@ -26,7 +26,7 @@ Platform: **macOS (Apple Silicon)** ana cihaz + **Windows** ikinci cihaz. Proje 
 - **Tür:** Gerilim/gizem. Hikâye: "Son Durak" (8 bölüm, gece otobüsü, "sen" diye hitap eden anlatıcı). Ayrıntı: `hikaye.md`.
 
 ## Bir bölümün akışı (kullanıcının gözünden)
-1. Kullanıcı Claude Code'a "Bölüm N'in senaryosunu yaz" der. Claude `hikaye.md` ve `durum.json` dosyalarını okuyup `bolumler/bolum_NN/senaryo.json` dosyasını yazar. (İleride `senaryo.py` bunu `claude -p` ile otomatik yapabilir.) **Kontrol noktası:** Kullanıcı senaryoyu okuyup düzenler.
+1. Kullanıcı Claude Code'a "Bölüm N'in senaryosunu yaz" der. Claude `hikaye.md` ve `durum.json` dosyalarını okuyup `bolumler/bolum_NN/senaryo.json` dosyasını yazar. (İleride `senaryo.py` bunu `claude -p` ile otomatik yapabilir.) **Kontrol noktası:** Kullanıcı senaryoyu okuyup düzenler. **Kalıcı kural:** Bölüm 2'den itibaren her senaryo, önceki bölümde seçilmeyen yolu hatırlatan kısa bir sekansla **açılır** (1. sahne) (ayrıntı: `hikaye.md` → "Seçilmeyen yol sekansı").
 2. `python kod/yeni_bolum.py` komutu çalıştırılır; mevcut `senaryo.json` dosyasını girdi olarak alır.
 3. `gorsel.py` her sahne için istek (referans görseller + prompt) hazırlar; kullanıcı Gemini uygulamasında sahne başına 3 görsel üretir, `--yerlestir` ile `sahneN_a/b/c.png` olarak 1080×1920'ye kesilip yerleşir. **Kontrol noktası:** Kullanıcı her sahne için birini seçer veya yeniden üretir. Seçilmeyenler ilham arşivi olarak kalır.
 4. ElevenLabs anlatımı cümle cümle seslendirir ve kelime zamanlamalarını kaydeder. **Kontrol noktası:** Kullanıcı dinler, gerekirse tek bir cümleyi yeniden ürettirir.
