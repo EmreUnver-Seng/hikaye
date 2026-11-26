@@ -1,0 +1,15 @@
+# Gizli anahtarlar
+.env
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Üretilen büyük dosyalar (görsel, ses, video)
+bolumler/*/gorseller/
+bolumler/*/sesler/
+bolumler/*/*.mp4
+
+# macOS
+.DS_Store
