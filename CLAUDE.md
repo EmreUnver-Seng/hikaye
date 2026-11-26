@@ -56,6 +56,7 @@ hikaye-projesi/
 - [ ] **5.** `yeni_bolum.py`: orkestrasyon ve kontrol noktaları.
 
 Oturum düzeni (ayrıntı: `KULLANIM.md`): **Planlama** = hikâye kararları, **Kod** = pipeline modülleri, **Bölümler** = bölüm başına üretim.
+Kullanıcı yeni bir cihazda **"oturum düzenini kur"** derse: `KULLANIM.md` → "Oturum düzeni" bölümündeki adımları uygula.
 
 İlke: Her modül tek başına çalışmalı ve test edilebilmeli. Önce bir bölümü baştan sona çıkaran basit bir sürüm kurulacak, sonra geliştirilecek.
 

@@ -89,7 +89,23 @@ uv pip install -r requirements.txt
 - Git kimliği (depo klasöründe): `git config user.name "Emre"` ve `git config user.email "255063380+EmreUnver-Seng@users.noreply.github.com"`
 - Kurulum kontrolü: `.venv\Scripts\python kod\kurulum_kontrol.py` → çıktıyı Claude'a yapıştır.
 - Anahtar kontrolü: `.venv\Scripts\python kod\test_anahtarlar.py`
-- Claude masaüstü uygulamasını kur, Code sekmesinde bu klasörü aç, kenar çubuğuna aynı üç bölümü (Planlama / Kod / Bölümler) ekle.
+- Claude masaüstü uygulamasını kur, Code sekmesinde bu klasörü aç ve Claude'a **"oturum düzenini kur"** de (ayrıntı aşağıda).
+
+## Oturum düzeni (yeni cihazda Claude kurar)
+Kullanıcı **"oturum düzenini kur"** dediğinde Claude, Claude masaüstü uygulamasının Code sekmesinde şunları yapar:
+
+1. Kenar çubuğundaki bölümleri listeler. Aşağıdakilerden eksik olanları, **adı birebir aynı** olacak şekilde ve bu sırayla oluşturur (var olanı tekrar oluşturmaz):
+   | Sıra | Bölüm adı | İçine giren oturumlar |
+   |---|---|---|
+   | 1 | `Hikâye · Planlama` | Hikâye kararları → `hikaye.md` |
+   | 2 | `Hikâye · Kod` | Yol haritası adımları (pipeline modülleri) |
+   | 3 | `Hikâye · Bölümler` | Bölüm başına üretim oturumu |
+2. İçinde bulunduğu oturumu `Hikâye · Kod` bölümüne taşır ve adını `Kurulum: <cihaz adı>` yapar (ör. `Kurulum: Windows`).
+3. Bu projeye ait olmayan oturumlara ve uygulama ayarlarına **dokunmaz**.
+4. `kod/kurulum_kontrol.py`'yi çalıştırır, sorun varsa kullanıcıya çözümünü söyler.
+5. Yaptıklarını kısaca raporlar ve sıradaki adımı (`CLAUDE.md` → yol haritası) söyler.
+
+Oturum adları için kalıp: `Hikâye planı`, `Adım N: <modül>`, `Bölüm NN`.
 
 **Mac ↔ Windows farkı:** Python yolu Mac'te `.venv/bin/python`, Windows'ta `.venv\Scripts\python`.
 
