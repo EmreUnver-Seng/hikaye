@@ -40,7 +40,8 @@ except KapakHatasi:
     kontrol("görsel hatalı", True)
 
 ass1 = ass_metni("Son Durak", 1, "Kalkış")
-kontrol("bölüm no", "BÖLÜM 1" in ass1 and "/ 8" in ass1)
+kontrol("bölüm no", "BÖLÜM 1" in ass1)
+kontrol("toplam bölüm sayısı yok (sürpriz kaçmasın)", "/ 8" not in ass1)
 kontrol("başlık büyük", "KALKIŞ" in ass1)
 kontrol("bölüm 1'de seçim satırı yok", "Seçilen yol" not in ass1)
 ass2 = ass_metni("Son Durak", 2, "Kimse hatırlamıyor", ("A", "Zarfı aç"))

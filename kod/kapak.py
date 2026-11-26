@@ -1,6 +1,6 @@
 """Kapak adımı: bölümün Reels kapak görselini (1080×1920) üretir.
 
-Kapakta seri adı, "BÖLÜM N / 8", bölüm başlığı ve (Bölüm 2'den itibaren) önceki
+Kapakta seri adı, "BÖLÜM N", bölüm başlığı ve (Bölüm 2'den itibaren) önceki
 bölümde kazanan seçim yazar; izleyici profil ızgarasında hangi bölüm olduğunu ve
 hikâyenin hangi daldan ilerlediğini kapaktan anlar.
 Yazılar Instagram profil ızgarasının gösterdiği orta 3:4 alanın (y 240–1680)
@@ -25,7 +25,7 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from senaryo import SON_BOLUM, SenaryoHatasi, secenek_metni, senaryo_yukle  # noqa: E402
+from senaryo import SenaryoHatasi, secenek_metni, senaryo_yukle  # noqa: E402
 from montaj import FONT_ADI, FONT_DOSYASI, FONT_KLASORU, GEN, YUK, VURGU, BEYAZ  # noqa: E402
 
 KOK = Path(__file__).resolve().parent.parent
@@ -79,8 +79,7 @@ def ass_metni(seri, bolum, baslik, secim=None):
         olay("Golge", bant.format(a="50", b=90, y1=-200, y2=620, g=GEN), 0),
         olay("Golge", bant.format(a="40", b=110, y1=1260, y2=YUK + 200, g=GEN), 0),
         olay("Seri", f"{{\\pos(540,330)\\c{VURGU}}}{_ass_metin(tr_buyuk(seri))}"),
-        olay("Bolum", f"{{\\pos(540,470)}}BÖLÜM {bolum}"
-                      f"{{\\fs80\\c{VURGU}}} / {SON_BOLUM}"),
+        olay("Bolum", f"{{\\pos(540,470)}}BÖLÜM {bolum}"),
         olay("Baslik", f"{{\\pos(540,1470)}}{_ass_metin(tr_buyuk(baslik))}"),
     ]
     if secim:
