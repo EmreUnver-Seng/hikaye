@@ -1,0 +1,10 @@
+{
+  "model": "eleven_v4",
+  "sesler": {
+    "anlatici": {"id": "JBFqnCBsd6RMkjVDRZzb", "ad": "George"},
+    "nadide":   {"id": "pFZP5JQG7iQjIQuC4Bku", "ad": "Lily"},
+    "kerem":    {"id": "TX3LPaxmHKxFdv7VOQHJ", "ad": "Liam"},
+    "murat":    {"id": "onwK4e9ZLuTAKqWW03F9", "ad": "Daniel"},
+    "sen":      {"id": "IKne3meq5aSn9XLyUdCD", "ad": "Charlie"}
+  }
+}

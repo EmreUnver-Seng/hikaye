@@ -8,7 +8,9 @@ __pycache__/
 
 # Üretilen büyük dosyalar (görsel, ses, video)
 bolumler/*/gorseller/
-bolumler/*/sesler/
+# Bölüm sesleri (sesler/) git'e girer: cihaz değiştirince yeniden seslendirmek (kredi) gerekmesin.
+# Yalnızca ses seçme denemeleri dışarıda kalır.
+bolumler/*/sesler/deneme/
 bolumler/*/*.mp4
 
 # macOS

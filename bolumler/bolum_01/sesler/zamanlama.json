@@ -1,0 +1,109 @@
+{
+  "bolum": 1,
+  "cumleler": {
+    "s03_c1": {
+      "sahne": 3,
+      "cumle": 1,
+      "konusan": "nadide",
+      "metin": "Ben Nadide. Gece yolculuğu uzun olur evladım, biraz laflarız.",
+      "ses_id": "pFZP5JQG7iQjIQuC4Bku",
+      "model": "eleven_v4",
+      "dosya": "s03_c1.mp3",
+      "sure": 4.96,
+      "kelimeler": [
+        {
+          "kelime": "Ben",
+          "baslangic": 0.0,
+          "bitis": 0.32
+        },
+        {
+          "kelime": "Nadide.",
+          "baslangic": 0.36,
+          "bitis": 1.16
+        },
+        {
+          "kelime": "Gece",
+          "baslangic": 1.44,
+          "bitis": 1.68
+        },
+        {
+          "kelime": "yolculuğu",
+          "baslangic": 1.76,
+          "bitis": 2.32
+        },
+        {
+          "kelime": "uzun",
+          "baslangic": 2.4,
+          "bitis": 2.56
+        },
+        {
+          "kelime": "olur",
+          "baslangic": 2.64,
+          "bitis": 2.8
+        },
+        {
+          "kelime": "evladım,",
+          "baslangic": 2.88,
+          "bitis": 3.68
+        },
+        {
+          "kelime": "biraz",
+          "baslangic": 3.76,
+          "bitis": 4.0
+        },
+        {
+          "kelime": "laflarız.",
+          "baslangic": 4.08,
+          "bitis": 4.96
+        }
+      ]
+    },
+    "s03_c2": {
+      "sahne": 3,
+      "cumle": 2,
+      "konusan": "anlatici",
+      "metin": "Çok konuşuyor. Ama konuşurken sürekli arkaya bakıyor.",
+      "ses_id": "JBFqnCBsd6RMkjVDRZzb",
+      "model": "eleven_v4",
+      "dosya": "s03_c2.mp3",
+      "sure": 3.84,
+      "kelimeler": [
+        {
+          "kelime": "Çok",
+          "baslangic": 0.0,
+          "bitis": 0.24
+        },
+        {
+          "kelime": "konuşuyor.",
+          "baslangic": 0.32,
+          "bitis": 1.08
+        },
+        {
+          "kelime": "Ama",
+          "baslangic": 1.28,
+          "bitis": 1.44
+        },
+        {
+          "kelime": "konuşurken",
+          "baslangic": 1.52,
+          "bitis": 2.16
+        },
+        {
+          "kelime": "sürekli",
+          "baslangic": 2.24,
+          "bitis": 2.64
+        },
+        {
+          "kelime": "arkaya",
+          "baslangic": 2.72,
+          "bitis": 3.04
+        },
+        {
+          "kelime": "bakıyor.",
+          "baslangic": 3.12,
+          "bitis": 3.84
+        }
+      ]
+    }
+  }
+}
