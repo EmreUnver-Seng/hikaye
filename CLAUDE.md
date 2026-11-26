@@ -13,6 +13,11 @@ Platform: **macOS (Apple Silicon)** ana cihaz + **Windows** ikinci cihaz. Proje 
 - Altyazı fontu sistem klasöründen değil, projedeki `varliklar/fontlar/` klasöründen yüklenir (Mac ve Windows font yolları farklı).
 - `subprocess` çağrılarında komut liste olarak verilir, `shell=True` kullanılmaz.
 
+### Token tasarrufu (Claude için)
+- Bu projede **superpowers süreç becerilerini kullanma**: brainstorming, writing-plans, tasarım/spec belgesi yazma, bağımsız inceleme ajanları, subagent-driven-development, TDD. İsteneni doğrudan yap. Kullanıcı açıkça isterse kullanılabilir.
+- Alt ajan başlatma; gereksiz dosya okuma. Küçük değişiklikte mevcut testleri çalıştırmak yeterli.
+- Bir iş bitince yeni oturum **açma**; sıradaki adımı söyle, oturumu kullanıcı açar.
+
 ## Alınmış kararlar
 - **Araçlar:** Claude (senaryo; **API kullanılmaz**, Claude Code üzerinden Pro aboneliğiyle), Gemini **uygulaması** (görsel; **API kullanılmaz**, ücretli olduğu için. Görseller uygulamada elle üretilir, kod prompt'u hazırlar ve dosyayı yerleştirir), ElevenLabs (seslendirme; istenirse efekt ve müzik).
 - **Çalışma şekli:** Yarı otomatik. Kod tekrar eden işleri yapar (API çağrıları, dosya indirme ve adlandırma, montaj, altyazı, durum kaydı). Yaratıcı kararları kullanıcı verir.
