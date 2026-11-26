@@ -31,7 +31,8 @@ Platform: **macOS (Apple Silicon)** ana cihaz + **Windows** ikinci cihaz. Proje 
 3. `gorsel.py` her sahne için istek (referans görseller + prompt) hazırlar; kullanıcı Gemini uygulamasında sahne başına 3 görsel üretir, `--yerlestir` ile `sahneN_a/b/c.png` olarak 1080×1920'ye kesilip yerleşir. **Kontrol noktası:** Kullanıcı her sahne için birini seçer veya yeniden üretir. Seçilmeyenler ilham arşivi olarak kalır.
 4. ElevenLabs anlatımı cümle cümle seslendirir ve kelime zamanlamalarını kaydeder. **Kontrol noktası:** Kullanıcı dinler, gerekirse tek bir cümleyi yeniden ürettirir.
 5. ffmpeg videoyu birleştirir: görseller, ses, altyazı, müzik ve sonda seçenek kartı.
-6. Video yüklenir. Sonra kazanan seçim girilir ("B kazandı") ve `durum.json` güncellenir.
+6. **Kapak (her bölümde, kalıcı kural):** `python kod/kapak.py bolumler/bolum_NN/senaryo.json` → `kapak.png` (Reels kapağı). Kapakta seri adı, "BÖLÜM N / 8", bölüm başlığı ve Bölüm 2'den itibaren önceki bölümde kazanan seçim ("Seçilen yol: A · …", `durum.json`'dan) yazar; yazılar profil ızgarasının orta 3:4 alanında kalır. Arka plan varsayılan sahne 1/a, `--gorsel 4=b` ile değişir. Testler: `python kod/test_kapak.py`.
+7. Video kapakla birlikte yüklenir. Sonra kazanan seçim girilir ("B kazandı") ve `durum.json` güncellenir.
 
 Hedef süre: kullanıcı başına bölüm başına 20–40 dk.
 
@@ -49,6 +50,7 @@ hikaye-projesi/
     ├── gorsel.py         # görsel istekleri + yerleştirme (Gemini uygulaması, elle)
     ├── ses.py            # ElevenLabs (cümle sesleri + kelime zamanlamaları)
     ├── montaj.py         # ffmpeg (zoom, altyazı, seçenek kartı)
+    ├── kapak.py          # Reels kapağı (seri, bölüm no, başlık, seçilen yol)
     └── yeni_bolum.py     # hepsini sırayla çalıştırır, kontrol noktalarında bekler
 ```
 
