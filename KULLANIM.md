@@ -59,6 +59,7 @@ Konu değişirse aynı sohbette devam etme, yeni oturum aç.
 ## Sık kullanılan komutlar
 ```bash
 cd "/Users/emre/Desktop/hikaye is"
+.venv/bin/python kod/kurulum_kontrol.py   # bu cihazın kurulumu eksiksiz mi?
 .venv/bin/python kod/test_anahtarlar.py   # anahtarlar + kalan ElevenLabs karakteri
 git status                                 # neler değişti?
 ```
@@ -86,7 +87,8 @@ uv pip install -r requirements.txt
 ```
 - `.env` dosyasını oluştur: `.env.example`'ı kopyala, anahtarları şifre yöneticisinden yapıştır.
 - Git kimliği (depo klasöründe): `git config user.name "Emre"` ve `git config user.email "255063380+EmreUnver-Seng@users.noreply.github.com"`
-- Kontrol: `.venv\Scripts\python kod\test_anahtarlar.py`
+- Kurulum kontrolü: `.venv\Scripts\python kod\kurulum_kontrol.py` → çıktıyı Claude'a yapıştır.
+- Anahtar kontrolü: `.venv\Scripts\python kod\test_anahtarlar.py`
 - Claude masaüstü uygulamasını kur, Code sekmesinde bu klasörü aç, kenar çubuğuna aynı üç bölümü (Planlama / Kod / Bölümler) ekle.
 
 **Mac ↔ Windows farkı:** Python yolu Mac'te `.venv/bin/python`, Windows'ta `.venv\Scripts\python`.
