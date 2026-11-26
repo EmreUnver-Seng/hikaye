@@ -50,7 +50,7 @@ def hata_bekle(fonksiyon, *parcalar):
 
 def ornek_harita(**degisiklik):
     harita = {"model": "eleven_v4",
-              "sesler": {"anlatici": "ID_ANLATICI", "nadide": "ID_NADIDE", "kerem": "ID_KEREM"}}
+              "sesler": {"anlatici": "ID_ANLATICI", "fatma": "ID_FATMA", "kerem": "ID_KEREM"}}
     harita.update(degisiklik)
     return harita
 
@@ -61,7 +61,7 @@ def ornek_veri():
                 "cumleler": [{"konusan": k, "metin": m} for k, m in cumleler]}
     return {"bolum": 1, "baslik": "Kalkış", "sahneler": [
         sahne(1, [], [("anlatici", "Yanındaki koltuk boş."), ("anlatici", "Ama biri vardı.")]),
-        sahne(2, ["nadide"], [("nadide", "Bunu al evladım.")]),
+        sahne(2, ["fatma"], [("fatma", "Bunu al evladım.")]),
         sahne(3, ["kerem"], [("kerem", "Biletler lütfen!"), ("anlatici", "Hep acelesi var.")]),
     ], "ikilem": {"soru": "?", "secenekler": {"A": "a", "B": "b"}}}
 
@@ -113,8 +113,8 @@ def calistir(klasor, istemci, cevap="e", **kw):
 def test_harita_gecerli():
     h = ses_haritasi_yukle(SES_HARITASI)
     assert h["model"] == "eleven_v4", h
-    assert h["sesler"]["murat"] == "onwK4e9ZLuTAKqWW03F9", h
-    assert h["sesler"]["anlatici"] == "JBFqnCBsd6RMkjVDRZzb", h
+    assert h["sesler"]["murat"] == "5HEFEBb9WCCpCdgZE77B", h
+    assert h["sesler"]["anlatici"] == "mF7tIc9VLrznhGooGjaT", h
 
 
 def test_harita_hatalari():
@@ -194,7 +194,7 @@ def test_hepsi_yeni():
         isler = isler_ve_klasor(d)
     assert [i.anahtar for i in isler] == ["s01_c1", "s01_c2", "s02_c1", "s03_c1", "s03_c2"]
     assert all(i.uret for i in isler)
-    assert isler[2].ses_id == "ID_NADIDE" and isler[2].konusan == "nadide"
+    assert isler[2].ses_id == "ID_FATMA" and isler[2].konusan == "fatma"
 
 
 def test_var_olan_atlanir():
@@ -251,7 +251,7 @@ def test_eksik_sesler():
     harita = ornek_harita(sesler={"anlatici": "ID_ANLATICI"})
     with tempfile.TemporaryDirectory() as d:
         isler = isler_ve_klasor(d, harita=harita)
-    assert eksik_sesler(isler) == ["kerem", "nadide"], eksik_sesler(isler)
+    assert eksik_sesler(isler) == ["fatma", "kerem"], eksik_sesler(isler)
     assert isler[2].ses_id is None
 
 
@@ -283,7 +283,7 @@ def test_uretim_dosya_ve_kayit():
         assert kod == 0, cikti
         assert len(istemci.cagrilar) == 5, istemci.cagrilar
         c = istemci.cagrilar[2]
-        assert c["voice_id"] == "ID_NADIDE" and c["text"] == "Bunu al evladım.", c
+        assert c["voice_id"] == "ID_FATMA" and c["text"] == "Bunu al evladım.", c
         assert c["model_id"] == "eleven_v4" and c["language_code"] == "tr", c
         assert c["output_format"] == "mp3_44100_128", c
         assert (klasor / "s02_c1.mp3").read_bytes() == SAHTE_MP3
@@ -292,8 +292,8 @@ def test_uretim_dosya_ve_kayit():
         k = veri["cumleler"]["s02_c1"]
         assert {key: k[key] for key in ("sahne", "cumle", "konusan", "metin", "ses_id",
                                          "model", "dosya")} == {
-            "sahne": 2, "cumle": 1, "konusan": "nadide", "metin": "Bunu al evladım.",
-            "ses_id": "ID_NADIDE", "model": "eleven_v4", "dosya": "s02_c1.mp3"}, k
+            "sahne": 2, "cumle": 1, "konusan": "fatma", "metin": "Bunu al evladım.",
+            "ses_id": "ID_FATMA", "model": "eleven_v4", "dosya": "s02_c1.mp3"}, k
         assert k["sure"] == 1.6, k["sure"]
         assert [x["kelime"] for x in k["kelimeler"]] == ["Bunu", "al", "evladım."]
         assert not (klasor / "zamanlama.json.tmp").exists()
@@ -321,7 +321,7 @@ def test_eksik_ses_api_cagrilmaz():
         kod, cikti = calistir(Path(d), istemci,
                               harita=ornek_harita(sesler={"anlatici": "ID_ANLATICI"}))
         assert kod == 1 and not istemci.cagrilar, cikti
-        assert "kerem" in cikti and "nadide" in cikti and "sesler.json" in cikti, cikti
+        assert "kerem" in cikti and "fatma" in cikti and "sesler.json" in cikti, cikti
 
 
 def test_kota_yetmezse_cagrilmaz():

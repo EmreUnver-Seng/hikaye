@@ -27,9 +27,9 @@
       "no": 3,
       "mekan": "otobus",
       "gorsel": "Otobüsün içi. Bordo hırkalı, gri topuzlu, altın gözlüklü yaşlı kadın 13 numaraya oturmuş, kucağında kahverengi deri çanta, gülümseyerek konuşuyor ama başını omzunun üzerinden arkaya çevirmiş. Yanında 12 numarada hardal sarısı kapüşonlu genç.",
-      "karakterler": ["sen", "nadide"],
+      "karakterler": ["sen", "fatma"],
       "cumleler": [
-        { "konusan": "nadide", "metin": "Ben Nadide. Gece yolculuğu uzun olur evladım, biraz laflarız." },
+        { "konusan": "fatma", "metin": "Ben Fatma. Gece yolculuğu uzun olur evladım, biraz laflarız." },
         { "konusan": "anlatici", "metin": "Çok konuşuyor. Ama konuşurken sürekli arkaya bakıyor." }
       ]
     },
@@ -68,9 +68,9 @@
       "no": 7,
       "mekan": "otobus",
       "gorsel": "Yakın plan: yaşlı kadının titreyen elleri, bordo hırka kolları, hardal sarısı kapüşonlu gencin ellerine kahverengi kalın bir zarf uzatıyor. Arka planda mor-mavi gece lambası.",
-      "karakterler": ["sen", "nadide"],
+      "karakterler": ["sen", "fatma"],
       "cumleler": [
-        { "konusan": "nadide", "metin": "Bunu al. Son durağa kadar açma. Kimseye de gösterme." },
+        { "konusan": "fatma", "metin": "Bunu al. Son durağa kadar açma. Kimseye de gösterme." },
         { "konusan": "anlatici", "metin": "Elleri titriyor. Neden sana?" }
       ]
     },

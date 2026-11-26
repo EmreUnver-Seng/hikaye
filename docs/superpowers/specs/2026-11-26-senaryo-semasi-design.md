@@ -24,10 +24,10 @@ Her bölümün senaryosu `bolumler/bolum_NN/senaryo.json` dosyasında durur. Bu 
       "no": 1,
       "mekan": "otobus",
       "gorsel": "İngilizce veya Türkçe görsel tarifi",
-      "karakterler": ["sen", "nadide"],
+      "karakterler": ["sen", "fatma"],
       "cumleler": [
         { "konusan": "anlatici", "metin": "Saat 23:30. Otobüse biniyorsun." },
-        { "konusan": "nadide", "metin": "Son durağa kadar açma, evladım." }
+        { "konusan": "fatma", "metin": "Son durağa kadar açma, evladım." }
       ]
     }
   ],
@@ -54,7 +54,7 @@ Seçenekler iki biçimde yazılabilir (geriye uyumlu): düz yazı (`"A": "Zarfı
 ```
 Nesnede `metin` zorunlu, `gorsel` isteğe bağlı; başka alan hata. `gorsel` tarifinden `gorsel.py` kare (1:1) bir Gemini isteği üretir; görsel `gorseller/secenek_A.png` olarak yerleşir ve `montaj.py` seçim kartında kullanır. Diğer modüller `secenek_metni(deger)` / `secenek_gorseli(deger)` yardımcılarıyla okur.
 
-Karakter kimlikleri: `sen, nadide, riza, kerem, murat, ayla` (referans: `karakterler/<kimlik>.png`). Konuşan ayrıca `anlatici` olabilir.
+Karakter kimlikleri: `sen, fatma, riza, kerem, murat, ayla` (referans: `karakterler/<kimlik>.png`). Konuşan ayrıca `anlatici` olabilir.
 
 ## Kontroller
 **Hata** (dosya geçersiz):

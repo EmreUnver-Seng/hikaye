@@ -9,7 +9,7 @@ Senaryodaki her cümleyi konuşanın sabit ElevenLabs sesiyle seslendirmek ve al
   | Konuşan | Ses | ID |
   |---|---|---|
   | anlatici | George | `JBFqnCBsd6RMkjVDRZzb` |
-  | nadide | Lily | `pFZP5JQG7iQjIQuC4Bku` |
+  | fatma | Lily | `pFZP5JQG7iQjIQuC4Bku` |
   | kerem | Liam | `TX3LPaxmHKxFdv7VOQHJ` |
   | murat | Daniel | `onwK4e9ZLuTAKqWW03F9` |
   | sen | Charlie | `IKne3meq5aSn9XLyUdCD` |
@@ -33,7 +33,7 @@ Senaryodaki her cümleyi konuşanın sabit ElevenLabs sesiyle seslendirmek ve al
   "model": "eleven_v4",
   "sesler": {
     "anlatici": {"id": "JBFqnCBsd6RMkjVDRZzb", "ad": "George"},
-    "nadide":   {"id": "pFZP5JQG7iQjIQuC4Bku", "ad": "Lily"},
+    "fatma":   {"id": "pFZP5JQG7iQjIQuC4Bku", "ad": "Lily"},
     "kerem":    {"id": "TX3LPaxmHKxFdv7VOQHJ", "ad": "Liam"},
     "murat":    {"id": "onwK4e9ZLuTAKqWW03F9", "ad": "Daniel"},
     "sen":      {"id": "IKne3meq5aSn9XLyUdCD", "ad": "Charlie"}
@@ -91,7 +91,7 @@ python kod/ses.py bolumler/bolum_01/senaryo.json --kuru       # ses üretmez: ne
 ## Test: `kod/test_ses.py` (düz Python, ağ yok)
 API istemcisi parametre olarak verilir; testler sahte istemci kullanır (sabit mp3 baytı + gerçek biçimde alignment, sayaç). Denenenler: `sesler.json` doğrulama (eksik alan, bilinmeyen kimlik, boş id); dosya adları; iş listesi (atlama, metin/ses/model değişince yeniden, `--sahne`, `--cumle`, olmayan numara); karakter sayımı; eksik ses ID'sinde API'nin hiç çağrılmaması; kota yetmezse çağrılmaması; `h` cevabında çağrılmaması; kelime çıkarma (Türkçe harfler, noktalama, çoklu boşluk; deneme klasöründeki gerçek George cevabının biçimi); yarıda hata sonrası önceki kayıtların korunması.
 
-**Gerçek deneme:** Bölüm 1, sahne 3 (Nadide + anlatıcı, ~114 kredi).
+**Gerçek deneme:** Bölüm 1, sahne 3 (Fatma + anlatıcı, ~114 kredi).
 
 ## Proje geneline etkiler
 - `CLAUDE.md`: yol haritasında adım 3 işaretlenir, kontrol komutu ve `sesler.json` notu eklenir.

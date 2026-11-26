@@ -27,11 +27,11 @@ def gecerli_ornek(bolum=1):
             "no": no,
             "gorsel": f"Sahne {no}: gece otobüsünün içi, mor-mavi ışık.",
             "mekan": "otobus",
-            "karakterler": ["sen", "nadide"],
+            "karakterler": ["sen", "fatma"],
             "cumleler": [
                 {"konusan": "anlatici",
                  "metin": "Otobüs karanlık yolda ilerliyor ve sen camdan dışarı bakıyorsun."},
-                {"konusan": "nadide",
+                {"konusan": "fatma",
                  "metin": "Bu yolu çok iyi bilirim evladım, çok iyi."},
             ],
         })

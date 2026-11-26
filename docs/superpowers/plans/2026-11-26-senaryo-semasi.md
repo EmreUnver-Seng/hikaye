@@ -13,7 +13,7 @@
 ## Global Constraints
 - Yollar `pathlib.Path`; dosyalar `encoding="utf-8"`; `shell=True` yok.
 - Tüm kullanıcıya dönük mesajlar Türkçe.
-- Karakter kimlikleri: `sen, nadide, riza, kerem, murat, ayla`; konuşan ayrıca `anlatici`.
+- Karakter kimlikleri: `sen, fatma, riza, kerem, murat, ayla`; konuşan ayrıca `anlatici`.
 - Sahne sayısı 8–12; süre 45–90 sn (2,5 kelime/sn); "sen" cümlesi > 3 → uyarı; cümle > 25 kelime → uyarı.
 - Windows konsolunda Türkçe karakter bozulmamalı: `sys.stdout.reconfigure(encoding="utf-8")`.
 

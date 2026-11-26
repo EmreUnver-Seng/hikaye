@@ -239,7 +239,7 @@ def test_gruplara_bol():
     kayit = json.loads(GERCEK_ZAMANLAMA.read_text(encoding="utf-8"))["cumleler"]["s03_c1"]
     gruplar = _metinler(gruplara_bol(kayit["kelimeler"]))
     kontrol("gerçek s03_c1 grupları", gruplar == [
-        "Ben Nadide.", "Gece yolculuğu uzun", "olur evladım,", "biraz laflarız."], gruplar)
+        "Ben Fatma.", "Gece yolculuğu uzun", "olur evladım,", "biraz laflarız."], gruplar)
     kontrol("tek kelime", _metinler(gruplara_bol([kelime("Teyze?", 0, 0.5)])) == ["Teyze?"])
     uzun = [kelime(k, i, i + 0.5) for i, k in enumerate("bir iki üç dört beş altı yedi".split())]
     kontrol("en çok 4 kelime", _metinler(gruplara_bol(uzun)) ==
@@ -267,7 +267,7 @@ def test_ass_yardimcilari():
 
 def test_altyazi_olaylari():
     girdiler = [SahneGirdisi(1, Path("g.png"), [
-        CumleGirdisi("s01_c1", Path("x"), [kelime("Ben", 0.0, 0.3), kelime("Nadide.", 0.36, 1.16),
+        CumleGirdisi("s01_c1", Path("x"), [kelime("Ben", 0.0, 0.3), kelime("Fatma.", 0.36, 1.16),
                                             kelime("Gece", 1.44, 1.68), kelime("uzun.", 1.76, 2.3)]),
         CumleGirdisi("s01_c2", Path("y"), [kelime("Teyze?", 0.1, 0.6)]),
     ])]
@@ -278,10 +278,10 @@ def test_altyazi_olaylari():
     olaylar = altyazi_olaylari(c)
     kontrol("olay sayısı = kelime sayısı", len(olaylar) == 5, len(olaylar))
     kontrol("Dialogue satırı", all(o.startswith("Dialogue: ") for o in olaylar))
-    kontrol("ilk olay: Ben sarı", "{\\c&H002DB8E8&}Ben{\\c&H00FFFFFF&} Nadide." in olaylar[0], olaylar[0])
-    kontrol("ilk olay 0'da başlar, Nadide'ye kadar", ",0:00:00.00,0:00:00.36," in olaylar[0], olaylar[0])
+    kontrol("ilk olay: Ben sarı", "{\\c&H002DB8E8&}Ben{\\c&H00FFFFFF&} Fatma." in olaylar[0], olaylar[0])
+    kontrol("ilk olay 0'da başlar, Fatma'ya kadar", ",0:00:00.00,0:00:00.36," in olaylar[0], olaylar[0])
     kontrol("grup sonu → sonraki grup başı", ",0:00:00.36,0:00:01.44," in olaylar[1], olaylar[1])
-    kontrol("ikinci grup metni", "Gece" in olaylar[2] and "Nadide" not in olaylar[2], olaylar[2])
+    kontrol("ikinci grup metni", "Gece" in olaylar[2] and "Fatma" not in olaylar[2], olaylar[2])
     son1 = min(2.3 + CUMLE_SONU_PAYI, slot1)
     kontrol("cümle sonu slotu aşmaz", son1 <= slot1 and
             f",0:00:01.76,{ass_zaman(son1)}," in olaylar[3], olaylar[3])

@@ -54,14 +54,14 @@ def hata_bekle(fonksiyon, parca=""):
     raise AssertionError("GorselHatasi fırlatılmadı")
 
 
-def ornek_sahne(no=1, karakterler=("sen", "nadide")):
+def ornek_sahne(no=1, karakterler=("sen", "fatma")):
     return {"no": no, "gorsel": f"Sahne {no}: otobüsün içi, mor-mavi gece ışığı.",
             "karakterler": list(karakterler),
             "cumleler": [{"konusan": "anlatici", "metin": "Gece."}]}
 
 
 def ornek_veri():
-    sahneler = [ornek_sahne(1, ["sen"]), ornek_sahne(2, ["sen", "nadide"]),
+    sahneler = [ornek_sahne(1, ["sen"]), ornek_sahne(2, ["sen", "fatma"]),
                 ornek_sahne(3, [])]
     return {"bolum": 1, "baslik": "Kalkış", "sahneler": sahneler,
             "ikilem": {"soru": "?", "secenekler": {"A": "a", "B": "b"}}}
@@ -83,7 +83,7 @@ def png_uret(yol, gen, yuk):
 
 def test_tarifler_hikaye_mdden():
     t = karakter_tarifleri(HIKAYE)
-    assert set(t) == {"sen", "nadide", "riza", "kerem", "murat", "ayla"}, set(t)
+    assert set(t) == {"sen", "fatma", "riza", "kerem", "murat", "ayla"}, set(t)
     assert t["riza"].ad == "Rıza Usta", t["riza"].ad
     assert "bıyık" in t["riza"].gorunus
     assert "Hardal sarısı" in t["sen"].gorunus  # ** işaretleri temizlenmiş
@@ -100,10 +100,10 @@ def test_eksik_karakter_bolumu():
 
 def test_sahne_promptu():
     t = karakter_tarifleri(HIKAYE)
-    p = sahne_promptu(ornek_sahne(1, ["nadide", "sen"]), t)
+    p = sahne_promptu(ornek_sahne(1, ["fatma", "sen"]), t)
     for parca in ("kontur", "9:16", "konuşma balonu", "Sahne 1: otobüsün içi"):
         assert parca in p, f"'{parca}' prompt'ta yok"
-    assert p.index("1. görsel: Nadide Teyze") < p.index("2. görsel: Sen")
+    assert p.index("1. görsel: Fatma Teyze") < p.index("2. görsel: Sen")
 
 
 def test_sahne_promptu_karaktersiz():
@@ -164,7 +164,7 @@ def test_istekler_eksik_referans():
         s2 = metin[metin.index("## Sahne 2"):metin.index("## Sahne 3")]
         s3 = metin[metin.index("## Sahne 3"):]
         assert "```" in s1 and "karakterler/sen.png" in s1
-        assert "--karakter nadide" in s2 and "```" not in s2
+        assert "--karakter fatma" in s2 and "```" not in s2
         assert "```" in s3 and "Referans: yok" in s3
 
 
@@ -177,7 +177,7 @@ def test_durum_metni():
         metin = durum_metni(ornek_veri(), g, kok)
         assert "Sahne 1: 2/3" in metin, metin
         assert "Sahne 3: 0/3" in metin, metin
-        assert "sen" in metin and "nadide" in metin  # eksik referanslar
+        assert "sen" in metin and "fatma" in metin  # eksik referanslar
 
 
 # --- Görev 2: yerleştirme ve komut satırı ---
@@ -314,7 +314,7 @@ def test_cli_onay_sorusunda_girdi_yok():
 
 def test_sahne_promptu_stil_referansi():
     t = karakter_tarifleri(HIKAYE)
-    p = sahne_promptu(ornek_sahne(1, ["sen", "nadide"]), t, stil_var=True)
+    p = sahne_promptu(ornek_sahne(1, ["sen", "fatma"]), t, stil_var=True)
     assert "Ekteki 3. görsel" in p and "yalnızca çizim tarzı" in p, p
     assert "kişiyi" in p  # stil görselindeki kişiyi kopyalama uyarısı
     p0 = sahne_promptu(ornek_sahne(1, []), t, stil_var=True)

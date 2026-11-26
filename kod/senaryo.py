@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 # Karakter kimlikleri; referans görseli karakterler/<kimlik>.png
-KARAKTERLER = ("sen", "nadide", "riza", "kerem", "murat", "ayla")
+KARAKTERLER = ("sen", "fatma", "riza", "kerem", "murat", "ayla")
 ANLATICI = "anlatici"
 # Mekân kimlikleri; tarifleri hikaye.md'deki "Mekânlar" ve "Renk paleti" bölümlerinde.
 MEKANLAR = ("otobus", "tesis", "istasyon", "dis")

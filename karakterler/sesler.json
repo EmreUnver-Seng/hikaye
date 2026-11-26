@@ -1,10 +1,12 @@
 {
   "model": "eleven_v4",
   "sesler": {
-    "anlatici": {"id": "JBFqnCBsd6RMkjVDRZzb", "ad": "George"},
-    "nadide":   {"id": "pFZP5JQG7iQjIQuC4Bku", "ad": "Lily"},
-    "kerem":    {"id": "TX3LPaxmHKxFdv7VOQHJ", "ad": "Liam"},
-    "murat":    {"id": "onwK4e9ZLuTAKqWW03F9", "ad": "Daniel"},
-    "sen":      {"id": "IKne3meq5aSn9XLyUdCD", "ad": "Charlie"}
+    "anlatici": {"id": "mF7tIc9VLrznhGooGjaT", "ad": "Seyfullah Kartal"},
+    "fatma":    {"id": "FvxJI7vwUDkTkEOO7nd7", "ad": "Pelin Yıldız"},
+    "kerem":    {"id": "WrMDp5vz8Set38RjtsX8", "ad": "Mert Sözeri"},
+    "murat":    {"id": "5HEFEBb9WCCpCdgZE77B", "ad": "Eyüp Tulûhan Etker"},
+    "sen":      {"id": "KP3X6rVkkKf1t9i4cXBg", "ad": "Ozan"},
+    "riza":     {"id": "QAABwpMjK3YR9pYW5FDO", "ad": "Recep Sağlık"},
+    "ayla":     {"id": "vevaMEPHZ5tHlFtS3YPm", "ad": "Esin"}
   }
 }
