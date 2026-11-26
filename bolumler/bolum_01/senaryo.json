@@ -1,0 +1,112 @@
+{
+  "bolum": 1,
+  "baslik": "Kalkış",
+  "sahneler": [
+    {
+      "no": 1,
+      "gorsel": "Gece, otobüsün içi, mor-mavi gece lambaları. Yakın plan: 13 numaralı lacivert koltuk boş. Yanındaki 12 numarada hardal sarısı kapüşonlu genç, şaşkın gözlerle boş koltuğa bakıyor.",
+      "karakterler": ["sen"],
+      "cumleler": [
+        { "konusan": "anlatici", "metin": "Yanındaki koltuk boş." },
+        { "konusan": "anlatici", "metin": "Ama on beş dakika önce orada biri oturuyordu." }
+      ]
+    },
+    {
+      "no": 2,
+      "gorsel": "Gece otogarı, 23:30. Peronda üzerinde sarı yıldız logosu olan lacivert şehirlerarası otobüs, ön camında 'Gece Yıldızı Turizm'. Hardal sarısı kapüşonlu genç, sırt çantasıyla otobüsün açık kapısına yürüyor. Sodyum lamba turuncusu ışık.",
+      "karakterler": ["sen"],
+      "cumleler": [
+        { "konusan": "anlatici", "metin": "Üç saat önce. Gece Yıldızı Turizm, saat 23:30." },
+        { "konusan": "anlatici", "metin": "Koltuk 12, cam kenarı. Uzun bir gece seni bekliyor." }
+      ]
+    },
+    {
+      "no": 3,
+      "gorsel": "Otobüsün içi. Bordo hırkalı, gri topuzlu, altın gözlüklü yaşlı kadın 13 numaraya oturmuş, kucağında kahverengi deri çanta, gülümseyerek konuşuyor ama başını omzunun üzerinden arkaya çevirmiş. Yanında 12 numarada hardal sarısı kapüşonlu genç.",
+      "karakterler": ["sen", "nadide"],
+      "cumleler": [
+        { "konusan": "nadide", "metin": "Ben Nadide. Gece yolculuğu uzun olur evladım, biraz laflarız." },
+        { "konusan": "anlatici", "metin": "Çok konuşuyor. Ama konuşurken sürekli arkaya bakıyor." }
+      ]
+    },
+    {
+      "no": 4,
+      "gorsel": "Otobüs koridoru. Kırmızı yelekli, göğsünde sarı yıldız logosu olan jöleli saçlı genç muavin, elinde tabletle biletlere bakarak aceleyle yürüyor.",
+      "karakterler": ["kerem"],
+      "cumleler": [
+        { "konusan": "kerem", "metin": "Biletler lütfen! On iki, on üç, tamam." },
+        { "konusan": "anlatici", "metin": "Muavin Kerem. Hep acelesi var." }
+      ]
+    },
+    {
+      "no": 5,
+      "gorsel": "Ön sıralar. Lacivert takım elbiseli, gevşek bordo kravatlı, kısa sakallı adam akıllı telefonunu kulağına bastırmış, sinirli. Birkaç sıra arkada yeşil hemşire formalı, bej trençkotlu, at kuyruklu kızıl-kahve saçlı kadın arkaya, yaşlı kadına doğru bakıyor.",
+      "karakterler": ["murat", "ayla"],
+      "cumleler": [
+        { "konusan": "murat", "metin": "Alo? Alo! Beni duyuyor musun?" },
+        { "konusan": "anlatici", "metin": "Murat Bey. Telefon çekmiyor ama o susmuyor." },
+        { "konusan": "anlatici", "metin": "Ayla, nöbetten çıkmış bir hemşire. Teyzeye bir an fazla uzun bakıyor." }
+      ]
+    },
+    {
+      "no": 6,
+      "gorsel": "Şoför kabini, karanlık dağ yolu ön camda. Ön camda asılı tesbih. Dikiz aynasında gri yelekli, kalın gri bıyıklı şoförün sert gözleri görünüyor.",
+      "karakterler": ["riza"],
+      "cumleler": [
+        { "konusan": "anlatici", "metin": "Şoför Rıza Usta tek kelime etmiyor." },
+        { "konusan": "anlatici", "metin": "Gözleri yolda. Ya da sana öyle geliyor." }
+      ]
+    },
+    {
+      "no": 7,
+      "gorsel": "Yakın plan: yaşlı kadının titreyen elleri, bordo hırka kolları, hardal sarısı kapüşonlu gencin ellerine kahverengi kalın bir zarf uzatıyor. Arka planda mor-mavi gece lambası.",
+      "karakterler": ["sen", "nadide"],
+      "cumleler": [
+        { "konusan": "nadide", "metin": "Bunu al. Son durağa kadar açma. Kimseye de gösterme." },
+        { "konusan": "anlatici", "metin": "Elleri titriyor. Neden sana?" }
+      ]
+    },
+    {
+      "no": 8,
+      "gorsel": "Gece tesisi dışarıdan: 'Kuşkonmaz Tesisleri' tabelası, soluk yeşilimsi floresan ışıklı, neredeyse boş lokanta. Otoparkta lacivert otobüs, yolcular inmiş, silüet hâlinde.",
+      "karakterler": [],
+      "cumleler": [
+        { "konusan": "anlatici", "metin": "Saat üç. Kuşkonmaz Tesisleri. On beş dakika mola." }
+      ]
+    },
+    {
+      "no": 9,
+      "gorsel": "Otobüsün içi, mor-mavi ışık. Hardal sarısı kapüşonlu genç koridorda ayakta, donmuş hâlde 13 numaralı boş koltuğa bakıyor. Koltukta ne çanta ne hırka var.",
+      "karakterler": ["sen"],
+      "cumleler": [
+        { "konusan": "anlatici", "metin": "Otobüse dönüyorsun. On üç numara boş. Çantası da yok." },
+        { "konusan": "sen", "metin": "Teyze?" }
+      ]
+    },
+    {
+      "no": 10,
+      "gorsel": "Kırmızı yelekli muavin koridorda, tableti göğsüne bastırmış, gülümsüyor ama gözlerini kaçırıyor. Önünde hardal sarısı kapüşonlu genç.",
+      "karakterler": ["sen", "kerem"],
+      "cumleler": [
+        { "konusan": "kerem", "metin": "Hangi teyze? O koltuk baştan beri boştu." },
+        { "konusan": "anlatici", "metin": "Listeye bakmadı bile." }
+      ]
+    },
+    {
+      "no": 11,
+      "gorsel": "12 numaralı koltukta hardal sarısı kapüşonlu genç, kucağında kahverengi zarf, iki eliyle tutuyor. Cam dışında karanlık dağ silüetleri. Ön sıralardan lacivert takım elbiseli adam omzunun üzerinden bakıyor.",
+      "karakterler": ["sen", "murat"],
+      "cumleler": [
+        { "konusan": "anlatici", "metin": "Zarf hâlâ sende. Son durağa çok var." },
+        { "konusan": "anlatici", "metin": "Ne yapacaksın?" }
+      ]
+    }
+  ],
+  "ikilem": {
+    "soru": "Teyze kayıp. Zarfı şimdi açacak mısın?",
+    "secenekler": {
+      "A": "Zarfı aç",
+      "B": "Söz verdin, açma"
+    }
+  }
+}

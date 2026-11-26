@@ -49,9 +49,9 @@ hikaye-projesi/
 ## Yol haritası
 - [x] **Aşama 0:** Python 3.12 (`.venv`, uv ile), ffmpeg, `.env` (Gemini + ElevenLabs), `.gitignore`. Kontrol: `.venv/bin/python kod/test_anahtarlar.py`
 - [x] **Hikâye planı** (Planlama oturumu): tür, dünya, karakterler, ana olay örgüsü, dallanmalar → `hikaye.md`.
-- [ ] **1.** Senaryo JSON şeması + `senaryo.py` (şema doğrulama). `hikaye.md` şablonu hazır. ← **SIRADAKİ ADIM**
-- [ ] **2.** `gorsel.py`: sahne başına 3 varyant, karakter referanslarıyla.
-- [ ] **3.** `ses.py`: cümle bazlı TTS + zaman damgaları, sabit ses ID'si.
+- [x] **1.** Senaryo JSON şeması + `senaryo.py` (şema doğrulama). Şema: `docs/superpowers/specs/2026-11-26-senaryo-semasi-design.md`. Kontrol: `python kod/senaryo.py bolumler/bolum_01/senaryo.json`, testler: `python kod/test_senaryo.py`. Diğer modüller `senaryo_yukle(yol)` kullanır.
+- [ ] **2.** `gorsel.py`: sahne başına 3 varyant, karakter referanslarıyla. ← **SIRADAKİ ADIM**
+- [ ] **3.** `ses.py`: cümle bazlı TTS + zaman damgaları. Her cümlenin `konusan` alanı (anlatıcı veya karakter) kendi sabit ses ID'siyle seslendirilir; karakter → ses eşlemesi ayrı dosyada (ör. `karakterler/sesler.json`).
 - [ ] **4.** `montaj.py`: 9:16, yavaş zoom, altyazı, müzik, seçenek kartı.
 - [ ] **5.** `yeni_bolum.py`: orkestrasyon ve kontrol noktaları.
 
