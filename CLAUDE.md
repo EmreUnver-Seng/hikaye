@@ -44,6 +44,18 @@ Kaynak: "Seçmeli hikâye videolarını tutturma rehberi" (26.11.2026). Hikâyey
 - **İkilem:** İki seçenek de bir şey kaybettirir (bariz doğru yok, hedef %50-50). Seçenek metni en fazla 4–5 kelime (anlatıcı kartta soruyu ve seçenekleri "A: …. B: …." diye okur; okunduğunda da doğal olmalı). Değer çatışması olur, bilgi testi değil. Seçim için gereken bilgi bölümde verilmiş olur. Üçüncü yol sunulmaz. Türler dönüşümlü: ahlaki, güven, risk, kaynak, merak.
 - **Kapanış:** Son sahnenin son cümlesi ikilemi kurar. Mümkünse son kare açılış karesine görsel ya da sözel bağlanır (tekrar izlemede kopukluk olmasın).
 - **Tutarlılık:** Özel isimlerin telaffuzu bir kez test edilir; sorunlu olan fonetik yazımla `hikaye.md`'ye kaydedilir ve hep öyle yazılır.
+- **Seçimin sonucu hissedilir:** Kazanan seçim sonraki bölümde sahneyi, bir repliği ya da bir karakterin kaderini görünür biçimde değiştirir. İkilem yazılırken iki dalın kaba taslağı da çıkarılır.
+
+## Üretim ve yayın standartları (rehberden, kalıcı)
+Tam metin: `docs/rehber/secmeli-hikaye-rehberi-2026-11-26.pdf`. Yayın, oylama, metrik ve kontrol listesinin özeti beyin kasasında (`🏰 300-Projects/AI-Hikaye-Videolari/Yayin-Sureci.md`).
+- **Kurgu:** Ekranda her 2–3 sn'de bir şey değişir. Zoom yönü sırayla değişir. Gerilimde kısa kesmeler + ses vuruşu. İlk 0.5 sn sessiz olmaz.
+- **Altyazı:** büyük, kalın, 2–4 kelime; alt %20 ve sağ kenar boş. Anlatıcı beyaz, karakter konuşmaları karaktere özel renk, anahtar kelime vurgulu. ı/ş/ğ kontrol edilir.
+- **Ses:** sesler sezon boyunca sabit; hız ~160–180 kelime/dk; kanca cümlesi ayrı üretilip en iyisi seçilir; her sahnede en az bir ortam sesi; ikilem anında aynı 2 sn'lik "imza sesi" (henüz yok).
+- **İkilem kartı:** 3–5 sn, A solda/kırmızı, B sağda/mavi; son karede "A mı, B mi? Yoruma yaz."; ayrı "takip et" kartı yok.
+- **Görsel kontrol:** AI hatası (el, göz, eriyen yazı) olan varyant seçilmez.
+- **Dışa aktarım:** 1080×1920, 30 fps, MP4 H.264; her platforma filigransız dosya. Her yayında AI etiketi açık; müzik kullanılırsa yalnız telifsiz/lisanslı.
+- **Dallanma ve stok (karar 2026-11-27):** Seçim yalnız sonraki bölümün ilk 10–20 sn'lik seçime bağlı açılışını değiştirir; geri kalan ortak sahneler 2–3 bölüm stokta tutulur, açılış oylama kapanınca üretilir (ayrıntı: `hikaye.md` → "Dallanma noktaları").
+- **Bilinçli olarak değiştirilmeyenler (karar 2026-11-27):** Sezon 8 bölüm kalır (rehber 10–12 öneriyor). ElevenLabs mevcut planla sürer.
 
 ## Klasör yapısı
 ```

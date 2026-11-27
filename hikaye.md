@@ -105,7 +105,7 @@ Zarftaki 20 yıllık fotoğrafta, kaza otobüsünün **12 numaralı koltuğunda*
 
 
 ## Dallanma noktaları
-Kural: Her bölüm sonunda iki seçenek (A / B). Seçim bir sonraki bölümün **ilk yarısını** değiştirir, ikinci yarısında hikâye ana rotaya döner. Bir seçim, ana rotadaki olayı (ör. zarfın açılması) engellemez; yalnızca nasıl ve kimin üzerinden olacağını değiştirir.
+Kural: Her bölüm sonunda iki seçenek (A / B). Seçim bir sonraki bölümün yalnız **seçime bağlı açılışını (ilk 10–20 sn)** değiştirir; bölümün geri kalanı seçimden bağımsız ortak sahnelerdir ve önceden (2–3 bölüm stok) üretilir. Seçime bağlı açılış oylama kapanınca üretilir (karar 2026-11-27, tutturma rehberine göre; önceki kural "ilk yarı" idi). Seçimin etkisi sonraki bölümlerde küçük ayrıntılarla (replik, nesne, bir karakterin tavrı) görünür kalır. Bir seçim, ana rotadaki olayı (ör. zarfın açılması) engellemez; yalnızca nasıl ve kimin üzerinden olacağını değiştirir.
 
 Kazanan seçimler `durum.json`'a yazılır. İki seçim sonraki bölümlerde küçük ayrıntılarla geri döner ("hatırlanan seçimler"): **B1** (zarf) ve **B3** (kime güvendin).
 
