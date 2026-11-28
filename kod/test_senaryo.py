@@ -421,6 +421,19 @@ def test_saat_nesne_olmali():
     hata_icerir(bozuk(lambda v: v["sahneler"][0].__setitem__("saat", "02:45")), "saat")
 
 
+def test_ton_istege_bagli():
+    def ton(deger):
+        return lambda v: v["sahneler"][0]["cumleler"][0].update(ton=deger)
+    hatalar, uyarilar = dogrula(bozuk(ton("impatient, slightly annoyed")))
+    assert hatalar == [] and uyarilar == [], (hatalar, uyarilar)
+    hata_icerir(bozuk(ton("")), "ton")
+    hata_icerir(bozuk(ton(3)), "ton")
+    hata_icerir(bozuk(ton("[whispers]")), "köşeli")
+    uyari_icerir(bozuk(ton("very very slow and quiet and sad")), "ton")
+    hata_icerir(bozuk(lambda v: v["sahneler"][0]["cumleler"][0].update(metin="[sighs] Ah.")),
+                "etiket")
+
+
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")
     testler = [(ad, f) for ad, f in sorted(globals().items()) if ad.startswith("test_")]

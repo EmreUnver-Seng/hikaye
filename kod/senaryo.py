@@ -23,7 +23,10 @@ MEKANLAR = ("otobus", "tesis", "istasyon", "dis")
 
 SAHNE_EN_AZ, SAHNE_EN_COK = 8, 12
 SURE_EN_AZ, SURE_EN_COK = 45, 90  # saniye
-KELIME_SANIYEDE = 2.5  # tahmini konuşma hızı
+# Tahmini konuşma hızı (yalnız konuşma; montajdaki cümle/sahne araları ve kart hariç).
+# 2026-11-28'de onaylanan yöntemle (ton etiketi + bağlam + speed 1.2) üretilen 9 cümlelik
+# örnekte ölçüldü: 61 kelime / 29,9 sn ≈ 2,0. Eski 2,5 değeri süreyi kısa gösteriyordu.
+KELIME_SANIYEDE = 2.0
 SEN_CUMLE_SINIRI = 3
 CUMLE_KELIME_SINIRI = 25
 SON_BOLUM = 8  # finalde seçenek yok, yalnızca soru
@@ -38,6 +41,10 @@ SAAT_ISTEGE_BAGLI = {"es"}
 SAAT_YONLERI = ("geri", "ileri")
 SAAT_ES_EN_COK = 5  # sahne başına eklenebilecek sessizlik (sn)
 CUMLE_ALANLARI = {"konusan", "metin"}
+# 'ton': seslendirmede okunuşu yönlendiren kısa İngilizce tarif ("impatient, slightly annoyed").
+# ses.py metnin başına [ton] etiketi olarak ekler; altyazıda görünmez.
+CUMLE_ISTEGE_BAGLI = {"ton"}
+TON_KELIME_SINIRI = 6
 IKILEM_ALANLARI = {"soru", "secenekler"}
 SECENEK_ALANLARI = {"metin", "gorsel"}  # seçenek nesne yazılırsa; 'gorsel' isteğe bağlı
 
@@ -211,8 +218,18 @@ def _sahne_dogrula(d, sahne, i):
             d.hata(f"{konum}, cumleler", "en az bir cümle olmalı.")
         for j, cumle in enumerate(sahne["cumleler"]):
             c_konum = f"{konum}, cümle {j + 1}"
-            if not d.nesne(cumle, c_konum, CUMLE_ALANLARI):
+            if not d.nesne(cumle, c_konum, CUMLE_ALANLARI, CUMLE_ALANLARI | CUMLE_ISTEGE_BAGLI):
                 continue
+            if "ton" in cumle and d.metin(cumle["ton"], f"{c_konum}, ton"):
+                if any(k in cumle["ton"] for k in "[]"):
+                    d.hata(f"{c_konum}, ton", "köşeli parantez yazma; ses.py etiketi kendisi "
+                                              "[...] içine alır.")
+                elif _kelime_sayisi(cumle["ton"]) > TON_KELIME_SINIRI:
+                    d.uyari(f"{c_konum}, ton", f"{_kelime_sayisi(cumle['ton'])} kelime; kısa tut "
+                                               f"(en fazla {TON_KELIME_SINIRI} önerilir).")
+            if "metin" in cumle and isinstance(cumle["metin"], str) and "[" in cumle["metin"]:
+                d.hata(f"{c_konum}, metin", "metinde [...] etiketi olmaz; okunuş için 'ton' alanını "
+                                            "kullan (altyazıya girmesin diye).")
             if "konusan" in cumle:
                 konusan = cumle["konusan"]
                 if not isinstance(konusan, str):

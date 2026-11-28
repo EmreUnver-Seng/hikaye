@@ -64,6 +64,7 @@ Karakter kimlikleri: `sen, fatma, riza, kerem, murat, ayla` (referans: `karakter
 - 8–12 sahne; `no` 1'den başlayıp sırayla artar.
 - `karakterler` bilinen kimliklerden oluşur, tekrar yok (boş liste olabilir: manzara sahnesi).
 - `cumleler` en az 1 eleman; `konusan` `anlatici` ya da sahnenin `karakterler` listesindeki biri.
+- Cümlede isteğe bağlı `ton` (2026-11-28): okunuşu yönlendiren kısa İngilizce tarif, köşeli parantezsiz (`"impatient, slightly annoyed"`); 6 kelimeden uzunsa uyarı. `metin` içinde `[...]` etiketi hata (etiket altyazıya girmesin diye yalnız `ton`'da).
 - `ikilem.soru` zorunlu; bölüm 1–7'de `secenekler` tam olarak `A` ve `B`; bölüm 8'de `secenekler` yok.
 
 **Uyarı** (dosya geçerli, gözden geçir):

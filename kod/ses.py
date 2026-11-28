@@ -38,8 +38,13 @@ KART = "kart"  # seçim kartı okumasının anahtarı (kart.mp3); sahne/cümle n
 
 # kaynak: aynı metin/ses/modelle hazır başka bir kaydın anahtarı (cümle eklenip
 # silinince numaralar kayar); varsa API yerine o ses kopyalanır, kredi harcanmaz.
-Is = namedtuple("Is", "anahtar sahne cumle konusan metin ses_id uret kaynak",
-                defaults=(None,))
+# ton: cümlenin okunuş tarifi (senaryodaki 'ton'), metnin başına [ton] olarak eklenir.
+# onceki/sonraki: bölüm sırasındaki komşu cümlelerin metni; ElevenLabs'e previous_text/next_text
+# olarak gider, replikler birbirine cevap veriyormuş gibi okunsun diye.
+Is = namedtuple("Is", "anahtar sahne cumle konusan metin ses_id uret kaynak ton onceki sonraki",
+                defaults=(None, None, None, None))
+HIZ_EN_AZ, HIZ_EN_COK = 0.7, 1.2  # ElevenLabs voice_settings.speed aralığı
+VARSAYILAN_HIZ = 1.0  # sesler.json'da 'hiz' yoksa; eski kayıtlar bu hızla üretildi
 
 
 class SesHatasi(Exception):
@@ -75,9 +80,13 @@ def ses_haritasi_dogrula(veri):
                 hatalar.append(f"sesler.json: '{kimlik}' için 'id' boş olmayan bir metin olmalı.")
                 continue
             harita[kimlik] = ses_id.strip()
+    hiz = veri.get("hiz", VARSAYILAN_HIZ)
+    if isinstance(hiz, bool) or not isinstance(hiz, (int, float)) or not HIZ_EN_AZ <= hiz <= HIZ_EN_COK:
+        hatalar.append(f"sesler.json: 'hiz' {HIZ_EN_AZ}–{HIZ_EN_COK} arasında bir sayı olmalı "
+                       f"(ör. 1.2).")
     if hatalar:
         raise SesHatasi(hatalar)
-    return {"model": model.strip(), "sesler": harita}
+    return {"model": model.strip(), "sesler": harita, "hiz": float(hiz)}
 
 
 def ses_haritasi_yukle(yol):
@@ -114,6 +123,37 @@ def hizalama_sec(cevap):
             if hizalama.get("characters"):
                 return hizalama
     raise SesHatasi("ElevenLabs cevabında harf zamanlaması yok; altyazı için gerekli.")
+
+
+def etiketleri_ayikla(hizalama):
+    """[ton] etiketlerinin harflerini hizalamadan atar (altyazıya girmesinler).
+
+    Etiketin hemen ardındaki boşluk da atılır; geri kalan harflerin zamanları aynen kalır.
+    """
+    harfler = hizalama["characters"]
+    baslar = hizalama["character_start_times_seconds"]
+    bitisler = hizalama["character_end_times_seconds"]
+    tut, icerde, etiket_bitti = [], False, False
+    for i, harf in enumerate(harfler):
+        if harf == "[":
+            icerde = True
+            continue
+        if icerde:
+            if harf == "]":
+                icerde, etiket_bitti = False, True
+            continue
+        if etiket_bitti and harf.isspace():
+            continue
+        etiket_bitti = False
+        tut.append(i)
+    return {"characters": [harfler[i] for i in tut],
+            "character_start_times_seconds": [baslar[i] for i in tut],
+            "character_end_times_seconds": [bitisler[i] for i in tut]}
+
+
+def istek_metni(metin, ton=None):
+    """ElevenLabs'e giden metin: ton varsa başına [ton] etiketi eklenir."""
+    return f"[{ton.strip()}] {metin}" if ton else metin
 
 
 def kelimeleri_cikar(hizalama):
@@ -178,10 +218,21 @@ def isleri_hazirla(veri, harita, kayitlar, klasor, sahne=None, cumle=None, kart=
     elif sahne is not None and sahne not in sahneler:
         raise SesHatasi(f"Sahne {sahne} yok (senaryoda {len(sahneler)} sahne var).")
 
-    def _hazir_mi(anahtar, metin, ses_id):
+    hiz = harita.get("hiz", VARSAYILAN_HIZ)
+
+    def _hazir_mi(anahtar, metin, ses_id, ton=None):
+        # 'hiz' alanı olmayan eski kayıtlar (Bölüm 1–2) hazır sayılır: hız ayarı sonradan
+        # geldi ve o bölümler bilerek yeniden üretilmiyor. Yeniden üretmek için --cumle/--sahne.
         k = kayitlar.get(anahtar) or {}
         return ((Path(klasor) / f"{anahtar}.mp3").exists() and k.get("metin") == metin
-                and k.get("ses_id") == ses_id and k.get("model") == harita["model"])
+                and k.get("ses_id") == ses_id and k.get("model") == harita["model"]
+                and k.get("ton") == ton and k.get("hiz", hiz) == hiz)
+
+    sirali = [c for s in veri["sahneler"] for c in s["cumleler"]]
+    komsular = {}
+    for n, c in enumerate(sirali):
+        komsular[id(c)] = (sirali[n - 1]["metin"] if n else None,
+                           sirali[n + 1]["metin"] if n + 1 < len(sirali) else None)
 
     if kart or (sahne is None and cumle is None):
         metin = kart_okuma_metni(veri["ikilem"])
@@ -202,12 +253,15 @@ def isleri_hazirla(veri, harita, kayitlar, klasor, sahne=None, cumle=None, kart=
                 continue
             anahtar = dosya_adi(s["no"], i)
             ses_id = harita["sesler"].get(c["konusan"])
-            uret = cumle is not None or not _hazir_mi(anahtar, c["metin"], ses_id)
+            ton = c.get("ton")
+            uret = cumle is not None or not _hazir_mi(anahtar, c["metin"], ses_id, ton)
             kaynak = None
             if uret and cumle is None and ses_id is not None:
                 kaynak = next((a for a in sorted(kayitlar) if a not in (anahtar, KART)
-                               and _hazir_mi(a, c["metin"], ses_id)), None)
-            isler.append(Is(anahtar, s["no"], i, c["konusan"], c["metin"], ses_id, uret, kaynak))
+                               and _hazir_mi(a, c["metin"], ses_id, ton)), None)
+            onceki, sonraki = komsular[id(c)]
+            isler.append(Is(anahtar, s["no"], i, c["konusan"], c["metin"], ses_id, uret, kaynak,
+                            ton, onceki, sonraki))
     if kart_isi:
         isler.append(kart_isi)
     return isler
@@ -218,7 +272,7 @@ def eksik_sesler(isler):
 
 
 def karakter_sayisi(isler):
-    return sum(len(i.metin) for i in isler if i.uret and i.kaynak is None)
+    return sum(len(istek_metni(i.metin, i.ton)) for i in isler if i.uret and i.kaynak is None)
 
 
 # --- ElevenLabs ---
@@ -250,15 +304,22 @@ def kalan_kota(istemci):
     return abonelik.character_limit - abonelik.character_count, abonelik.character_limit
 
 
-def _cumleyi_seslendir(istemci, is_, model):
-    secenekler = {"text": is_.metin, "model_id": model, "output_format": SES_BICIMI}
+def _cumleyi_seslendir(istemci, is_, model, hiz=VARSAYILAN_HIZ):
+    secenekler = {"text": istek_metni(is_.metin, is_.ton), "model_id": model,
+                  "output_format": SES_BICIMI}
     if model not in DIL_KODU_DESTEKLEMEYEN:
         secenekler["language_code"] = DIL
+    if hiz != VARSAYILAN_HIZ:
+        secenekler["voice_settings"] = {"speed": hiz}
+    if is_.onceki:
+        secenekler["previous_text"] = is_.onceki
+    if is_.sonraki:
+        secenekler["next_text"] = is_.sonraki
     try:
         cevap = istemci.text_to_speech.convert_with_timestamps(is_.ses_id, **secenekler)
     except Exception as e:  # noqa: BLE001
         raise _api_hatasi(e) from e
-    return base64.b64decode(cevap.audio_base_64), hizalama_sec(cevap)
+    return base64.b64decode(cevap.audio_base_64), etiketleri_ayikla(hizalama_sec(cevap))
 
 
 def _kaydet(klasor, bolum, kayitlar):
@@ -356,12 +417,14 @@ def seslendir(veri, klasor, harita, istemci, sahne=None, cumle=None, kuru=False,
     klasor.mkdir(parents=True, exist_ok=True)
     _kopyala(klasor, veri["bolum"], kayitlar, kopyalar, yaz)
     for is_ in yeniler:
-        ses, hizalama = _cumleyi_seslendir(istemci, is_, harita["model"])
+        hiz = harita.get("hiz", VARSAYILAN_HIZ)
+        ses, hizalama = _cumleyi_seslendir(istemci, is_, harita["model"], hiz)
         (klasor / f"{is_.anahtar}.mp3").write_bytes(ses)
         bitisler = hizalama["character_end_times_seconds"]
         kayitlar[is_.anahtar] = {
             "sahne": is_.sahne, "cumle": is_.cumle, "konusan": is_.konusan,
             "metin": is_.metin, "ses_id": is_.ses_id, "model": harita["model"],
+            "ton": is_.ton, "hiz": hiz,
             "dosya": f"{is_.anahtar}.mp3", "sure": round(bitisler[-1], 3) if bitisler else 0.0,
             "kelimeler": kelimeleri_cikar(hizalama),
         }

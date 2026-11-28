@@ -1,5 +1,6 @@
 {
   "model": "eleven_v4",
+  "hiz": 1.2,
   "sesler": {
     "anlatici": {"id": "mF7tIc9VLrznhGooGjaT", "ad": "Seyfullah Kartal"},
     "fatma":    {"id": "FvxJI7vwUDkTkEOO7nd7", "ad": "Pelin Yıldız"},

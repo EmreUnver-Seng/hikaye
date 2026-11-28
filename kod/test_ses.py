@@ -31,6 +31,8 @@ from ses import (  # noqa: E402
     main,
     ses_haritasi_dogrula,
     ses_haritasi_yukle,
+    etiketleri_ayikla,
+    istek_metni,
     seslendir,
 )
 
@@ -452,6 +454,101 @@ def test_cli_arguman_hatalari():
         except SystemExit as e:
             kod = e.code
         assert kod not in (0, None), argv
+
+
+# --- Ton etiketi, bağlam ve hız (2026-11-28) ---
+
+def ton_veri():
+    v = ornek_veri()
+    v["sahneler"][1]["cumleler"][0]["ton"] = "worried"
+    return v
+
+
+def test_harita_hiz():
+    h = ses_haritasi_dogrula({"model": "eleven_v4", "sesler": {}})
+    assert h["hiz"] == 1.0, h
+    assert ses_haritasi_dogrula({"model": "eleven_v4", "sesler": {}, "hiz": 1.2})["hiz"] == 1.2
+    for kotu in (1.5, 0.5, "1.2", True):
+        hata_bekle(lambda k=kotu: ses_haritasi_dogrula(
+            {"model": "eleven_v4", "sesler": {}, "hiz": k}), "hiz")
+    assert ses_haritasi_yukle(SES_HARITASI)["hiz"] == 1.2
+
+
+def test_istek_metni():
+    assert istek_metni("Bak.", None) == "Bak."
+    assert istek_metni("Bak.", " impatient ") == "[impatient] Bak."
+
+
+def test_etiketler_ayiklanir():
+    h = etiketleri_ayikla(hizalama_uret("[worried] Bunu al."))
+    assert "".join(h["characters"]) == "Bunu al.", h["characters"]
+    k = kelimeleri_cikar(h)
+    assert [x["kelime"] for x in k] == ["Bunu", "al."], k
+    assert k[0]["baslangic"] == 1.0, k[0]  # zamanlar kaymaz: 'B' 10. harf
+    assert etiketleri_ayikla(hizalama_uret("Düz cümle."))["characters"] == list("Düz cümle.")
+
+
+def test_komsu_cumleler_ve_ton():
+    with tempfile.TemporaryDirectory() as d:
+        isler = isleri_hazirla(ton_veri(), ornek_harita(), {}, Path(d))
+    ilk, ikinci, fatma = isler[0], isler[1], isler[2]
+    assert ilk.onceki is None and ilk.sonraki == "Ama biri vardı.", ilk
+    assert fatma.onceki == "Ama biri vardı." and fatma.sonraki == "Biletler lütfen!", fatma
+    assert fatma.ton == "worried" and ilk.ton is None
+    assert isler[-1].anahtar == "kart" and isler[-1].onceki is None
+    # Sahne kapsamında da komşular bölüm sırasından gelir.
+    with tempfile.TemporaryDirectory() as d:
+        tek = isleri_hazirla(ton_veri(), ornek_harita(), {}, Path(d), sahne=2)
+    assert tek[0].onceki == "Ama biri vardı." and tek[0].sonraki == "Biletler lütfen!"
+
+
+def test_ton_degisince_yeniden_hiz_yoksa_hazir():
+    with tempfile.TemporaryDirectory() as d:
+        k = {"s02_c1": kayit("Bunu al evladım.", "ID_FATMA"),       # eski kayıt: ton/hiz yok
+             "s01_c1": kayit("Yanındaki koltuk boş.", "ID_ANLATICI")}
+        isler = isleri_hazirla(ton_veri(), ornek_harita(hiz=1.2), k, Path(d))
+        for ad in ("s02_c1", "s01_c1"):
+            (Path(d) / f"{ad}.mp3").write_bytes(SAHTE_MP3)
+        isler = isleri_hazirla(ton_veri(), ornek_harita(hiz=1.2), k, Path(d))
+    by = {i.anahtar: i for i in isler}
+    assert by["s02_c1"].uret, "ton eklenen cümle yeniden üretilmeli"
+    assert not by["s01_c1"].uret, "hiz alanı olmayan eski kayıt hazır sayılmalı"
+    with tempfile.TemporaryDirectory() as d:
+        (Path(d) / "s01_c1.mp3").write_bytes(SAHTE_MP3)
+        k = {"s01_c1": {**kayit("Yanındaki koltuk boş.", "ID_ANLATICI"), "hiz": 1.0}}
+        isler = isleri_hazirla(ornek_veri(), ornek_harita(hiz=1.2), k, Path(d))
+    assert isler[0].uret, "farklı hızla üretilmiş kayıt yeniden üretilmeli"
+
+
+def test_karakter_sayisi_etiket_dahil():
+    with tempfile.TemporaryDirectory() as d:
+        isler = isleri_hazirla(ton_veri(), ornek_harita(), {}, Path(d), sahne=2)
+    assert karakter_sayisi(isler) == len("[worried] Bunu al evladım."), karakter_sayisi(isler)
+
+
+def test_seslendir_istek_ve_kayit():
+    istemci = SahteIstemci()
+    with tempfile.TemporaryDirectory() as d:
+        kod, cikti = calistir(d, istemci, veri=ton_veri(), harita=ornek_harita(hiz=1.2))
+        kayitlar = kayitlari_yukle(d)
+    assert kod == 0, cikti
+    fatma = next(c for c in istemci.cagrilar if c["voice_id"] == "ID_FATMA")
+    assert fatma["text"] == "[worried] Bunu al evladım.", fatma
+    assert fatma["voice_settings"] == {"speed": 1.2}, fatma
+    assert fatma["previous_text"] == "Ama biri vardı." and fatma["next_text"] == "Biletler lütfen!"
+    ilk = istemci.cagrilar[0]
+    assert "previous_text" not in ilk and ilk["next_text"] == "Ama biri vardı.", ilk
+    k = kayitlar["s02_c1"]
+    assert k["ton"] == "worried" and k["hiz"] == 1.2, k
+    assert [x["kelime"] for x in k["kelimeler"]] == ["Bunu", "al", "evladım."], k["kelimeler"]
+    assert k["metin"] == "Bunu al evladım."
+
+
+def test_hiz_varsayilanda_ayar_gitmez():
+    istemci = SahteIstemci()
+    with tempfile.TemporaryDirectory() as d:
+        calistir(d, istemci)
+    assert all("voice_settings" not in c for c in istemci.cagrilar), istemci.cagrilar[0]
 
 
 if __name__ == "__main__":
