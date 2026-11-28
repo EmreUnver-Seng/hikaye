@@ -1,0 +1,170 @@
+{
+  "bolum": 2,
+  "baslik": "Kimse Hatırlamıyor",
+  "kanca": "Bir yolcu nasıl kaybolur?",
+  "sahneler": [
+    {
+      "no": 1,
+      "mekan": "otobus",
+      "gorsel": "Otobüsün mor-mavi ışığında aşırı yakın plan. Hardal sarısı kollu bir elin başparmağı koyu kırmızı mum mührün hemen altında duruyor. Kahverengi zarfın kapağı kapalı.",
+      "karakterler": [
+        "sen"
+      ],
+      "cumleler": [
+        {
+          "konusan": "anlatici",
+          "metin": "Ya o mührü kırsaydın?"
+        }
+      ]
+    },
+    {
+      "no": 2,
+      "mekan": "otobus",
+      "gorsel": "12 numaralı cam kenarı koltuğunda hardal sarısı kapüşonlu genç, mühürlü kahverengi zarfı ayaklarının arasındaki siyah sırt çantasının dibine yerleştiriyor. Yanındaki 13 numara boş.",
+      "karakterler": [
+        "sen"
+      ],
+      "cumleler": [
+        {
+          "konusan": "anlatici",
+          "metin": "On üç numara hâlâ boş. Sözünü tutuyorsun. Zarfı çantanın dibine itip fermuarı çekiyorsun."
+        }
+      ]
+    },
+    {
+      "no": 3,
+      "mekan": "otobus",
+      "gorsel": "Koridor boyunca alçak açı. Ön sıradaki lacivert takım elbiseli Murat omzunun üzerinden bakıyor. Bakışının hizasında, hardal sarısı kapüşonlu gencin ayakları arasındaki siyah çanta.",
+      "karakterler": [
+        "sen",
+        "murat"
+      ],
+      "cumleler": [
+        {
+          "konusan": "anlatici",
+          "metin": "Başını kaldırınca Murat'la göz göze geliyorsun. Bir an öncesine kadar çantana bakıyordu."
+        }
+      ]
+    },
+    {
+      "no": 4,
+      "mekan": "otobus",
+      "gorsel": "Kırmızı yelekli Kerem tableti koridorda hardal sarısı kapüşonlu gence doğru eğiyor. Tablet ışığı ikisinin ellerini aydınlatıyor. Listede 12 ve 14 dolu, 13 numaranın karşısı boş.",
+      "karakterler": [
+        "sen",
+        "kerem"
+      ],
+      "cumleler": [
+        {
+          "konusan": "kerem",
+          "metin": "Bak. On üç boş."
+        },
+        {
+          "konusan": "anlatici",
+          "metin": "Parmağını boş satırdan çekiyor. Fatma Teyze'nin adı ekranda yok."
+        },
+        {
+          "konusan": "anlatici",
+          "metin": "Binişte Kerem'in biletleri tek tek kontrol ettiğini hatırlıyorsun."
+        }
+      ]
+    },
+    {
+      "no": 5,
+      "mekan": "otobus",
+      "gorsel": "Ön sıralarda lacivert takım elbiseli Murat, telefonu kulağından indirmiş, camdan tesisin floresan ışıklarına bakıyor. Hardal sarısı kapüşonlu genç koridorda koltuğunun yanında.",
+      "karakterler": [
+        "sen",
+        "murat"
+      ],
+      "cumleler": [
+        {
+          "konusan": "sen",
+          "metin": "Yanımda oturan bordo hırkalı teyzeyi gördünüz mü?"
+        },
+        {
+          "konusan": "murat",
+          "metin": "Görmedim. Bütün yol telefonla uğraştım."
+        }
+      ]
+    },
+    {
+      "no": 6,
+      "mekan": "otobus",
+      "gorsel": "Bej trençkotlu Ayla koridor kenarında oturuyor. Yeşil forma yakası görünüyor. Başını kaldırmış, karşısındaki hardal sarısı kapüşonlu gence bakıyor.",
+      "karakterler": [
+        "sen",
+        "ayla"
+      ],
+      "cumleler": [
+        {
+          "konusan": "sen",
+          "metin": "Peki sen? Molada onu gördün mü?"
+        },
+        {
+          "konusan": "ayla",
+          "metin": "Görmedim. Molada dışarı bile çıkmadım."
+        },
+        {
+          "konusan": "anlatici",
+          "metin": "Ayla cevap verir vermez camdaki yansımasına dönüyor."
+        }
+      ]
+    },
+    {
+      "no": 7,
+      "mekan": "otobus",
+      "gorsel": "Taban hizasından yakın plan. Küçük bordo düğme, 13 numaralı lacivert koltuğun metal ayağına dayanmış. Hardal sarısı bir kol düğmeye uzanıyor.",
+      "karakterler": [
+        "sen"
+      ],
+      "cumleler": [
+        {
+          "konusan": "anlatici",
+          "metin": "Yerine dönerken ayağın bir şeye değiyor. Fatma Teyze'nin bordo hırkasındaki düğmelerden biri yerde."
+        }
+      ]
+    },
+    {
+      "no": 8,
+      "mekan": "otobus",
+      "gorsel": "12 numaralı koltuğun yanındaki camdan tesisin geride kalan floresan ışıkları görünüyor. Ön planda hardal sarısı kollu genç, sinyal çubukları boş olan telefonuna bakıyor.",
+      "karakterler": [
+        "sen"
+      ],
+      "cumleler": [
+        {
+          "konusan": "anlatici",
+          "metin": "Otobüs tesisten çıkıyor. Telefonunu çıkarıyorsun. Ekranda tek çizgi bile yok."
+        }
+      ]
+    },
+    {
+      "no": 9,
+      "mekan": "otobus",
+      "gorsel": "Omuz üstü çekim. Hardal sarısı kapüşonlu gencin açık avucunda bordo düğme var. Mor-mavi ışıklı koridor şoför kabinine kadar uzanıyor. Yanındaki 13 numaralı koltuk boş.",
+      "karakterler": [
+        "sen"
+      ],
+      "cumleler": [
+        {
+          "konusan": "anlatici",
+          "metin": "Düğmeyi avucunda sıkıyorsun. Otobüs dağ yoluna giriyor. Bir karar vermen gerek."
+        }
+      ]
+    }
+  ],
+  "ikilem": {
+    "soru": "Kimse Fatma Teyze'yi hatırlamıyor. Ne yapacaksın?",
+    "secenekler": {
+      "A": {
+        "metin": "Şoföre git, otobüsü durdurmasını iste",
+        "gorsel": "Otobüsün ön koridorunda, hardal sarısı kapüşonlu genç şoför kabininin eşiğinde. Gri yelekli şoförün sırtı görünüyor. Ön camın ötesinde farların aydınlattığı karanlık dağ yolu."
+      },
+      "B": {
+        "metin": "Sessizce kendin ara",
+        "gorsel": "Mor-mavi gece ışığında hardal sarısı kapüşonlu genç iki lacivert koltuğun arasında çömelmiş, telefon fenerini koltuk ayağının dibine tutuyor. Işık huzmesi döşemeye vuruyor."
+      }
+    }
+  }
+}

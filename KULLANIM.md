@@ -51,7 +51,7 @@ Konu değişirse aynı sohbette devam etme, yeni oturum aç.
 - [ ] "X kazandı, durum.json'a işle ve Bölüm N'in senaryosunu yaz"
 - [ ] Senaryoyu VS Code'da oku ve düzelt
 - [ ] Karakter referansı eksikse: `python kod/gorsel.py bolumler/bolum_NN/senaryo.json --karakter <kimlik>` → Gemini uygulamasında üret → `--yerlestir <kimlik>`
-- [ ] `python kod/gorsel.py bolumler/bolum_NN/senaryo.json` → `gorseller/istekler.md`'deki her sahne için Gemini uygulamasında 3 görsel üret, indir → `--yerlestir <sahne no>` (dosya verilmezse İndirilenler'deki en yenileri alır)
+- [ ] `python kod/gorsel.py bolumler/bolum_NN/senaryo.json` → `gorseller/istekler.md`'deki her sahne için Gemini uygulamasında bir görsel üret, indir → `--yerlestir <sahne no>` (dosya verilmezse İndirilenler'deki en yeni görseli önerir). Gerektiğinde alternatif dosyaları aynı komuta ekleyebilirsin.
 - [ ] `--durum` ile eksik sahne kalmadığını kontrol et
 - [ ] Yeni bir karakter ilk kez konuşacaksa: önce kısa bir dinleme denemesiyle ses seç, `karakterler/sesler.json`'a ekle
 - [ ] `python kod/ses.py bolumler/bolum_NN/senaryo.json --kuru` → kaç karakter harcanacak, kota yetiyor mu?

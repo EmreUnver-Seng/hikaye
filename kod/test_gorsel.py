@@ -175,8 +175,8 @@ def test_durum_metni():
         bos_dosya(varyant_yolu(g, 1, "a"))
         bos_dosya(varyant_yolu(g, 1, "c"))
         metin = durum_metni(ornek_veri(), g, kok)
-        assert "Sahne 1: 2/3" in metin, metin
-        assert "Sahne 3: 0/3" in metin, metin
+        assert "Sahne 1: hazır (a, c)" in metin, metin
+        assert "Sahne 3: ana görsel eksik" in metin, metin
         assert "sen" in metin and "fatma" in metin  # eksik referanslar
 
 
@@ -361,13 +361,17 @@ def test_cli_stil_yerlestir_kimlik_kabul():
     assert "bulunamadı" in sonuc.stdout, sonuc.stdout
 
 
-def test_promptlar_uc_farkli_gorsel_ister():
+def test_sahne_promptu_tek_gorsel_ister():
     t = karakter_tarifleri(HIKAYE)
-    for p in (sahne_promptu(ornek_sahne(1, ["sen"]), t), sahne_promptu(ornek_sahne(1, []), t),
-              karakter_promptu(t["sen"]), karakter_promptu(t["sen"], stil_var=True)):
+    for p in (sahne_promptu(ornek_sahne(1, ["sen"]), t), sahne_promptu(ornek_sahne(1, []), t)):
+        assert p.endswith("Bu sahne için tek bir görsel üret."), p
+
+
+def test_karakter_promptu_uc_farkli_gorsel_ister():
+    t = karakter_tarifleri(HIKAYE)
+    for p in (karakter_promptu(t["sen"]), karakter_promptu(t["sen"], stil_var=True)):
         son = p.strip().splitlines()[-1]
         assert "3 farklı görsel" in son, son
-    assert "kamera açısı" in sahne_promptu(ornek_sahne(1, ["sen"]), t)
 
 
 # --- Mekân tarifi (hikaye.md: Mekânlar + Renk paleti) ---

@@ -153,8 +153,7 @@ def sahne_promptu(sahne, karakterler, stil_var=False, mekanlar=None):
         satirlar.append(f"Mekân: {mekanlar[mekan]}")
     satirlar.append(f"Sahne: {sahne['gorsel']}")
     satirlar.append("Sahne tarifindeki pozlara, hareketlere ve bakış yönüne birebir uy.")
-    satirlar.append("Bu sahneyi 3 farklı görsel olarak, ayrı ayrı üret: kamera açısı ve kompozisyon "
-                    "farklı olsun; karakterlerin görünüşü, kıyafetleri ve renkleri aynı kalsın.")
+    satirlar.append("Bu sahne için tek bir görsel üret.")
     return "\n".join(satirlar)
 
 
@@ -253,7 +252,7 @@ def istekler_metni(veri, karakterler, kok, mekanlar=None):
         f"# Bölüm {veri['bolum']}: {veri['baslik']} — görsel istekleri",
         "",
         "Her sahne için: Gemini uygulamasında yeni sohbet aç, referans görselleri sırayla "
-        "ekle, prompt'u yapıştır, **3 farklı görsel** üret ve indir. "
+        "ekle, prompt'u yapıştır, bir görsel üret ve indir. "
         f"Sonra: `{komut} --yerlestir <sahne no>`",
         "",
     ]
@@ -286,8 +285,9 @@ def durum_metni(veri, klasor, kok):
     satirlar = []
     for sahne in veri["sahneler"]:
         hazir = [h for h in HARFLER if varyant_yolu(klasor, sahne["no"], h).exists()]
+        durum = "hazır" if "a" in hazir else "ana görsel eksik"
         ek = f" ({', '.join(hazir)})" if hazir else ""
-        satirlar.append(f"  Sahne {sahne['no']}: {len(hazir)}/{len(HARFLER)}{ek}")
+        satirlar.append(f"  Sahne {sahne['no']}: {durum}{ek}")
     tarifli = secenek_gorselleri(veri)
     for harf in SECENEK_HARFLERI:
         var = secenek_yolu(klasor, harf).exists()
@@ -403,14 +403,7 @@ def _dosyalari_sec(dosyalar, adet):
 def _sahneye(veri, gorseller, no, dosyalar, yeniden):
     if not 1 <= no <= len(veri["sahneler"]):
         raise GorselHatasi(f"Sahne {no} yok; bu bölümde 1–{len(veri['sahneler'])} arası sahne var.")
-    if dosyalar:
-        adet = len(dosyalar)
-    elif yeniden:
-        adet = len(HARFLER)
-    else:
-        adet = sum(not varyant_yolu(gorseller, no, h).exists() for h in HARFLER)
-        if adet == 0:
-            raise GorselHatasi(f"Sahne {no} dolu (a, b, c). Üzerine yazmak için --yeniden ekle.")
+    adet = len(dosyalar) if dosyalar else 1
     hedefler = hedef_yollar(gorseller, no, adet, yeniden)
     kaynaklar = _dosyalari_sec(dosyalar, adet)
     for kaynak in kaynaklar:  # hiçbir şey yazmadan önce hepsini kontrol et
