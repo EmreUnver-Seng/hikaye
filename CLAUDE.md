@@ -37,7 +37,7 @@ Platform: **macOS (Apple Silicon)** ana cihaz + **Windows** ikinci cihaz. Proje 
 Hedef süre: kullanıcı başına bölüm başına 20–40 dk.
 
 ## Senaryo yazım kuralları (her bölüm, kalıcı)
-Kaynak: "Seçmeli hikâye videolarını tutturma rehberi" (26.11.2026). Hikâyeye özel kurallar `hikaye.md`'de.
+Kaynak: "Seçmeli hikâye videolarını tutturma rehberi" (26.11.2026). Hikâyeye özel kurallar `hikaye.md`'de (ör. Son Durak'ta kanca sahnesi farklı kontrast tonunda görünür ve anlatıcı fısıldar: `hikaye.md` → "Kanca sahnesi").
 - **Açılış (ilk 2 sn):** İlk cümle soru ya da gerilim açar; sessizlik, selamlama, "bugünkü bölümde" yok. İlk 3 saniyede özel isim yerine rol kullanılır ("Rıza Usta" değil "şoför"). Sessiz izlendiğinde de merak uyandırmalı. İsteğe bağlı `kanca` alanı (en fazla 6 kelime) ilk 2 sn ekranın üstünde küçük yazı olarak görünür; yalnızca anlatımı tekrar etmiyorsa ve sessiz izleyene bir şey katıyorsa kullanılır.
 - **Kanca türleri, dönüşümlü:** sonuçtan başla · seçimin bedeli · gizemli nesne/ses · doğrudan soru · kural ihlali. Bölüm 2'den itibaren açılıştaki seçilmeyen yol sekansı "seçimin bedeli" kancası olarak yazılır ve oy sonucunu söyler ("%62'niz B dedi"); toplam 5 saniyeyi geçmez.
 - **Tempo:** Sahne başına 4–8 sn (yaklaşık 10–20 kelime). Daha uzun bir an iki sahneye bölünür (ör. yakın plan/ayrıntı karesi). Gerilim anında kısa cümleler.
