@@ -1,6 +1,3 @@
-# Son Durak
-
-Instagram Reels ve TikTok için izleyici seçimleriyle ilerleyen kısa hikâye videoları üreten yarı otomatik bir Python pipeline’ı. Her bölüm bir A/B ikilemiyle biter. Yayından sonra kazanan seçim `durum.json` dosyasına işlenir ve sonraki bölümün senaryosuna yön verir.
 
 ## Bir bölüm nasıl üretilir?
 
