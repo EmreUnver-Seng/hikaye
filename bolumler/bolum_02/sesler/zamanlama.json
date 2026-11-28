@@ -1,0 +1,835 @@
+{
+  "bolum": 2,
+  "cumleler": {
+    "s01_c1": {
+      "sahne": 1,
+      "cumle": 1,
+      "konusan": "anlatici",
+      "metin": "Ya o mührü kırsaydın?",
+      "ses_id": "mF7tIc9VLrznhGooGjaT",
+      "model": "eleven_v4",
+      "dosya": "s01_c1.mp3",
+      "sure": 1.68,
+      "kelimeler": [
+        {
+          "kelime": "Ya",
+          "baslangic": 0.0,
+          "bitis": 0.24
+        },
+        {
+          "kelime": "o",
+          "baslangic": 0.32,
+          "bitis": 0.4
+        },
+        {
+          "kelime": "mührü",
+          "baslangic": 0.48,
+          "bitis": 0.76
+        },
+        {
+          "kelime": "kırsaydın?",
+          "baslangic": 0.8,
+          "bitis": 1.68
+        }
+      ]
+    },
+    "s02_c1": {
+      "sahne": 2,
+      "cumle": 1,
+      "konusan": "anlatici",
+      "metin": "On üç numara hâlâ boş. Sözünü tutuyorsun. Zarfı çantanın dibine itip fermuarı çekiyorsun.",
+      "ses_id": "mF7tIc9VLrznhGooGjaT",
+      "model": "eleven_v4",
+      "dosya": "s02_c1.mp3",
+      "sure": 7.12,
+      "kelimeler": [
+        {
+          "kelime": "On",
+          "baslangic": 0.0,
+          "bitis": 0.16
+        },
+        {
+          "kelime": "üç",
+          "baslangic": 0.2,
+          "bitis": 0.28
+        },
+        {
+          "kelime": "numara",
+          "baslangic": 0.32,
+          "bitis": 0.72
+        },
+        {
+          "kelime": "hâlâ",
+          "baslangic": 0.88,
+          "bitis": 1.28
+        },
+        {
+          "kelime": "boş.",
+          "baslangic": 1.36,
+          "bitis": 1.96
+        },
+        {
+          "kelime": "Sözünü",
+          "baslangic": 2.24,
+          "bitis": 2.56
+        },
+        {
+          "kelime": "tutuyorsun.",
+          "baslangic": 2.64,
+          "bitis": 3.28
+        },
+        {
+          "kelime": "Zarfı",
+          "baslangic": 3.84,
+          "bitis": 4.24
+        },
+        {
+          "kelime": "çantanın",
+          "baslangic": 4.4,
+          "bitis": 4.8
+        },
+        {
+          "kelime": "dibine",
+          "baslangic": 4.88,
+          "bitis": 5.2
+        },
+        {
+          "kelime": "itip",
+          "baslangic": 5.28,
+          "bitis": 5.52
+        },
+        {
+          "kelime": "fermuarı",
+          "baslangic": 5.68,
+          "bitis": 6.16
+        },
+        {
+          "kelime": "çekiyorsun.",
+          "baslangic": 6.24,
+          "bitis": 7.12
+        }
+      ]
+    },
+    "s03_c1": {
+      "sahne": 3,
+      "cumle": 1,
+      "konusan": "anlatici",
+      "metin": "Başını kaldırınca Murat'la göz göze geliyorsun. Bir an öncesine kadar çantana bakıyordu.",
+      "ses_id": "mF7tIc9VLrznhGooGjaT",
+      "model": "eleven_v4",
+      "dosya": "s03_c1.mp3",
+      "sure": 5.84,
+      "kelimeler": [
+        {
+          "kelime": "Başını",
+          "baslangic": 0.0,
+          "bitis": 0.4
+        },
+        {
+          "kelime": "kaldırınca",
+          "baslangic": 0.44,
+          "bitis": 1.12
+        },
+        {
+          "kelime": "Murat'la",
+          "baslangic": 1.36,
+          "bitis": 1.76
+        },
+        {
+          "kelime": "göz",
+          "baslangic": 1.84,
+          "bitis": 2.0
+        },
+        {
+          "kelime": "göze",
+          "baslangic": 2.08,
+          "bitis": 2.32
+        },
+        {
+          "kelime": "geliyorsun.",
+          "baslangic": 2.36,
+          "bitis": 3.36
+        },
+        {
+          "kelime": "Bir",
+          "baslangic": 3.44,
+          "bitis": 3.6
+        },
+        {
+          "kelime": "an",
+          "baslangic": 3.64,
+          "bitis": 3.68
+        },
+        {
+          "kelime": "öncesine",
+          "baslangic": 3.76,
+          "bitis": 4.16
+        },
+        {
+          "kelime": "kadar",
+          "baslangic": 4.24,
+          "bitis": 4.48
+        },
+        {
+          "kelime": "çantana",
+          "baslangic": 4.56,
+          "bitis": 4.96
+        },
+        {
+          "kelime": "bakıyordu.",
+          "baslangic": 5.04,
+          "bitis": 5.84
+        }
+      ]
+    },
+    "s04_c1": {
+      "sahne": 4,
+      "cumle": 1,
+      "konusan": "kerem",
+      "metin": "Bak. On üç boş.",
+      "ses_id": "WrMDp5vz8Set38RjtsX8",
+      "model": "eleven_v4",
+      "dosya": "s04_c1.mp3",
+      "sure": 1.84,
+      "kelimeler": [
+        {
+          "kelime": "Bak.",
+          "baslangic": 0.0,
+          "bitis": 0.4
+        },
+        {
+          "kelime": "On",
+          "baslangic": 0.72,
+          "bitis": 0.88
+        },
+        {
+          "kelime": "üç",
+          "baslangic": 0.96,
+          "bitis": 1.12
+        },
+        {
+          "kelime": "boş.",
+          "baslangic": 1.2,
+          "bitis": 1.84
+        }
+      ]
+    },
+    "s04_c2": {
+      "sahne": 4,
+      "cumle": 2,
+      "konusan": "anlatici",
+      "metin": "Parmağını boş satırdan çekiyor. Fatma Teyze'nin adı ekranda yok.",
+      "ses_id": "mF7tIc9VLrznhGooGjaT",
+      "model": "eleven_v4",
+      "dosya": "s04_c2.mp3",
+      "sure": 4.72,
+      "kelimeler": [
+        {
+          "kelime": "Parmağını",
+          "baslangic": 0.0,
+          "bitis": 0.56
+        },
+        {
+          "kelime": "boş",
+          "baslangic": 0.64,
+          "bitis": 0.8
+        },
+        {
+          "kelime": "satırdan",
+          "baslangic": 0.88,
+          "bitis": 1.28
+        },
+        {
+          "kelime": "çekiyor.",
+          "baslangic": 1.36,
+          "bitis": 2.2
+        },
+        {
+          "kelime": "Fatma",
+          "baslangic": 2.48,
+          "bitis": 2.72
+        },
+        {
+          "kelime": "Teyze'nin",
+          "baslangic": 2.8,
+          "bitis": 3.2
+        },
+        {
+          "kelime": "adı",
+          "baslangic": 3.28,
+          "bitis": 3.52
+        },
+        {
+          "kelime": "ekranda",
+          "baslangic": 3.68,
+          "bitis": 4.08
+        },
+        {
+          "kelime": "yok.",
+          "baslangic": 4.16,
+          "bitis": 4.72
+        }
+      ]
+    },
+    "s04_c3": {
+      "sahne": 4,
+      "cumle": 3,
+      "konusan": "anlatici",
+      "metin": "Binişte Kerem'in biletleri tek tek kontrol ettiğini hatırlıyorsun.",
+      "ses_id": "mF7tIc9VLrznhGooGjaT",
+      "model": "eleven_v4",
+      "dosya": "s04_c3.mp3",
+      "sure": 4.08,
+      "kelimeler": [
+        {
+          "kelime": "Binişte",
+          "baslangic": 0.0,
+          "bitis": 0.56
+        },
+        {
+          "kelime": "Kerem'in",
+          "baslangic": 0.8,
+          "bitis": 1.12
+        },
+        {
+          "kelime": "biletleri",
+          "baslangic": 1.2,
+          "bitis": 1.68
+        },
+        {
+          "kelime": "tek",
+          "baslangic": 1.84,
+          "bitis": 2.0
+        },
+        {
+          "kelime": "tek",
+          "baslangic": 2.08,
+          "bitis": 2.24
+        },
+        {
+          "kelime": "kontrol",
+          "baslangic": 2.32,
+          "bitis": 2.64
+        },
+        {
+          "kelime": "ettiğini",
+          "baslangic": 2.72,
+          "bitis": 3.04
+        },
+        {
+          "kelime": "hatırlıyorsun.",
+          "baslangic": 3.12,
+          "bitis": 4.08
+        }
+      ]
+    },
+    "s05_c1": {
+      "sahne": 5,
+      "cumle": 1,
+      "konusan": "sen",
+      "metin": "Yanımda oturan bordo hırkalı teyzeyi gördünüz mü?",
+      "ses_id": "KP3X6rVkkKf1t9i4cXBg",
+      "model": "eleven_v4",
+      "dosya": "s05_c1.mp3",
+      "sure": 3.12,
+      "kelimeler": [
+        {
+          "kelime": "Yanımda",
+          "baslangic": 0.0,
+          "bitis": 0.4
+        },
+        {
+          "kelime": "oturan",
+          "baslangic": 0.48,
+          "bitis": 0.8
+        },
+        {
+          "kelime": "bordo",
+          "baslangic": 1.04,
+          "bitis": 1.36
+        },
+        {
+          "kelime": "hırkalı",
+          "baslangic": 1.4,
+          "bitis": 1.76
+        },
+        {
+          "kelime": "teyzeyi",
+          "baslangic": 1.84,
+          "bitis": 2.16
+        },
+        {
+          "kelime": "gördünüz",
+          "baslangic": 2.2,
+          "bitis": 2.64
+        },
+        {
+          "kelime": "mü?",
+          "baslangic": 2.72,
+          "bitis": 3.12
+        }
+      ]
+    },
+    "s05_c2": {
+      "sahne": 5,
+      "cumle": 2,
+      "konusan": "murat",
+      "metin": "Görmedim. Bütün yol telefonla uğraştım.",
+      "ses_id": "5HEFEBb9WCCpCdgZE77B",
+      "model": "eleven_v4",
+      "dosya": "s05_c2.mp3",
+      "sure": 2.72,
+      "kelimeler": [
+        {
+          "kelime": "Görmedim.",
+          "baslangic": 0.0,
+          "bitis": 0.88
+        },
+        {
+          "kelime": "Bütün",
+          "baslangic": 0.92,
+          "bitis": 1.2
+        },
+        {
+          "kelime": "yol",
+          "baslangic": 1.28,
+          "bitis": 1.44
+        },
+        {
+          "kelime": "telefonla",
+          "baslangic": 1.52,
+          "bitis": 2.0
+        },
+        {
+          "kelime": "uğraştım.",
+          "baslangic": 2.027,
+          "bitis": 2.72
+        }
+      ]
+    },
+    "s06_c1": {
+      "sahne": 6,
+      "cumle": 1,
+      "konusan": "sen",
+      "metin": "Peki sen? Molada onu gördün mü?",
+      "ses_id": "KP3X6rVkkKf1t9i4cXBg",
+      "model": "eleven_v4",
+      "dosya": "s06_c1.mp3",
+      "sure": 2.08,
+      "kelimeler": [
+        {
+          "kelime": "Peki",
+          "baslangic": 0.0,
+          "bitis": 0.24
+        },
+        {
+          "kelime": "sen?",
+          "baslangic": 0.4,
+          "bitis": 0.8
+        },
+        {
+          "kelime": "Molada",
+          "baslangic": 0.84,
+          "bitis": 1.2
+        },
+        {
+          "kelime": "onu",
+          "baslangic": 1.24,
+          "bitis": 1.36
+        },
+        {
+          "kelime": "gördün",
+          "baslangic": 1.4,
+          "bitis": 1.76
+        },
+        {
+          "kelime": "mü?",
+          "baslangic": 1.84,
+          "bitis": 2.08
+        }
+      ]
+    },
+    "s06_c2": {
+      "sahne": 6,
+      "cumle": 2,
+      "konusan": "ayla",
+      "metin": "Görmedim. Molada dışarı bile çıkmadım.",
+      "ses_id": "vevaMEPHZ5tHlFtS3YPm",
+      "model": "eleven_v4",
+      "dosya": "s06_c2.mp3",
+      "sure": 2.8,
+      "kelimeler": [
+        {
+          "kelime": "Görmedim.",
+          "baslangic": 0.0,
+          "bitis": 0.84
+        },
+        {
+          "kelime": "Molada",
+          "baslangic": 1.04,
+          "bitis": 1.44
+        },
+        {
+          "kelime": "dışarı",
+          "baslangic": 1.48,
+          "bitis": 1.76
+        },
+        {
+          "kelime": "bile",
+          "baslangic": 1.8,
+          "bitis": 2.0
+        },
+        {
+          "kelime": "çıkmadım.",
+          "baslangic": 2.04,
+          "bitis": 2.8
+        }
+      ]
+    },
+    "s06_c3": {
+      "sahne": 6,
+      "cumle": 3,
+      "konusan": "anlatici",
+      "metin": "Ayla cevap verir vermez camdaki yansımasına dönüyor.",
+      "ses_id": "mF7tIc9VLrznhGooGjaT",
+      "model": "eleven_v4",
+      "dosya": "s06_c3.mp3",
+      "sure": 3.76,
+      "kelimeler": [
+        {
+          "kelime": "Ayla",
+          "baslangic": 0.0,
+          "bitis": 0.32
+        },
+        {
+          "kelime": "cevap",
+          "baslangic": 0.4,
+          "bitis": 0.72
+        },
+        {
+          "kelime": "verir",
+          "baslangic": 0.8,
+          "bitis": 1.04
+        },
+        {
+          "kelime": "vermez",
+          "baslangic": 1.12,
+          "bitis": 1.6
+        },
+        {
+          "kelime": "camdaki",
+          "baslangic": 1.84,
+          "bitis": 2.32
+        },
+        {
+          "kelime": "yansımasına",
+          "baslangic": 2.36,
+          "bitis": 2.96
+        },
+        {
+          "kelime": "dönüyor.",
+          "baslangic": 3.04,
+          "bitis": 3.76
+        }
+      ]
+    },
+    "s07_c1": {
+      "sahne": 7,
+      "cumle": 1,
+      "konusan": "anlatici",
+      "metin": "Yerine dönerken ayağın bir şeye değiyor. Fatma Teyze'nin bordo hırkasındaki düğmelerden biri yerde.",
+      "ses_id": "mF7tIc9VLrznhGooGjaT",
+      "model": "eleven_v4",
+      "dosya": "s07_c1.mp3",
+      "sure": 6.72,
+      "kelimeler": [
+        {
+          "kelime": "Yerine",
+          "baslangic": 0.0,
+          "bitis": 0.32
+        },
+        {
+          "kelime": "dönerken",
+          "baslangic": 0.4,
+          "bitis": 0.96
+        },
+        {
+          "kelime": "ayağın",
+          "baslangic": 1.12,
+          "bitis": 1.52
+        },
+        {
+          "kelime": "bir",
+          "baslangic": 1.6,
+          "bitis": 1.68
+        },
+        {
+          "kelime": "şeye",
+          "baslangic": 1.76,
+          "bitis": 1.92
+        },
+        {
+          "kelime": "değiyor.",
+          "baslangic": 2.0,
+          "bitis": 2.48
+        },
+        {
+          "kelime": "Fatma",
+          "baslangic": 2.96,
+          "bitis": 3.28
+        },
+        {
+          "kelime": "Teyze'nin",
+          "baslangic": 3.36,
+          "bitis": 3.76
+        },
+        {
+          "kelime": "bordo",
+          "baslangic": 3.92,
+          "bitis": 4.16
+        },
+        {
+          "kelime": "hırkasındaki",
+          "baslangic": 4.24,
+          "bitis": 4.88
+        },
+        {
+          "kelime": "düğmelerden",
+          "baslangic": 4.96,
+          "bitis": 5.6
+        },
+        {
+          "kelime": "biri",
+          "baslangic": 5.68,
+          "bitis": 5.92
+        },
+        {
+          "kelime": "yerde.",
+          "baslangic": 6.0,
+          "bitis": 6.72
+        }
+      ]
+    },
+    "s08_c1": {
+      "sahne": 8,
+      "cumle": 1,
+      "konusan": "anlatici",
+      "metin": "Otobüs tesisten çıkıyor. Telefonunu çıkarıyorsun. Ekranda tek çizgi bile yok.",
+      "ses_id": "mF7tIc9VLrznhGooGjaT",
+      "model": "eleven_v4",
+      "dosya": "s08_c1.mp3",
+      "sure": 5.68,
+      "kelimeler": [
+        {
+          "kelime": "Otobüs",
+          "baslangic": 0.0,
+          "bitis": 0.48
+        },
+        {
+          "kelime": "tesisten",
+          "baslangic": 0.56,
+          "bitis": 1.12
+        },
+        {
+          "kelime": "çıkıyor.",
+          "baslangic": 1.2,
+          "bitis": 1.84
+        },
+        {
+          "kelime": "Telefonunu",
+          "baslangic": 2.0,
+          "bitis": 2.56
+        },
+        {
+          "kelime": "çıkarıyorsun.",
+          "baslangic": 2.6,
+          "bitis": 3.68
+        },
+        {
+          "kelime": "Ekranda",
+          "baslangic": 3.72,
+          "bitis": 4.24
+        },
+        {
+          "kelime": "tek",
+          "baslangic": 4.32,
+          "bitis": 4.48
+        },
+        {
+          "kelime": "çizgi",
+          "baslangic": 4.56,
+          "bitis": 4.88
+        },
+        {
+          "kelime": "bile",
+          "baslangic": 4.96,
+          "bitis": 5.12
+        },
+        {
+          "kelime": "yok.",
+          "baslangic": 5.16,
+          "bitis": 5.68
+        }
+      ]
+    },
+    "s09_c1": {
+      "sahne": 9,
+      "cumle": 1,
+      "konusan": "anlatici",
+      "metin": "Düğmeyi avucunda sıkıyorsun. Otobüs dağ yoluna giriyor. Bir karar vermen gerek.",
+      "ses_id": "mF7tIc9VLrznhGooGjaT",
+      "model": "eleven_v4",
+      "dosya": "s09_c1.mp3",
+      "sure": 5.84,
+      "kelimeler": [
+        {
+          "kelime": "Düğmeyi",
+          "baslangic": 0.0,
+          "bitis": 0.48
+        },
+        {
+          "kelime": "avucunda",
+          "baslangic": 0.56,
+          "bitis": 0.96
+        },
+        {
+          "kelime": "sıkıyorsun.",
+          "baslangic": 1.04,
+          "bitis": 1.76
+        },
+        {
+          "kelime": "Otobüs",
+          "baslangic": 2.16,
+          "bitis": 2.64
+        },
+        {
+          "kelime": "dağ",
+          "baslangic": 2.8,
+          "bitis": 2.96
+        },
+        {
+          "kelime": "yoluna",
+          "baslangic": 3.0,
+          "bitis": 3.28
+        },
+        {
+          "kelime": "giriyor.",
+          "baslangic": 3.36,
+          "bitis": 3.84
+        },
+        {
+          "kelime": "Bir",
+          "baslangic": 4.24,
+          "bitis": 4.4
+        },
+        {
+          "kelime": "karar",
+          "baslangic": 4.48,
+          "bitis": 4.72
+        },
+        {
+          "kelime": "vermen",
+          "baslangic": 4.8,
+          "bitis": 5.12
+        },
+        {
+          "kelime": "gerek.",
+          "baslangic": 5.2,
+          "bitis": 5.84
+        }
+      ]
+    },
+    "kart": {
+      "sahne": 0,
+      "cumle": 0,
+      "konusan": "anlatici",
+      "metin": "Kimse Fatma Teyze'yi hatırlamıyor. Ne yapacaksın? A: Şoföre git, otobüsü durdurmasını iste. B: Sessizce kendin ara.",
+      "ses_id": "mF7tIc9VLrznhGooGjaT",
+      "model": "eleven_v4",
+      "dosya": "kart.mp3",
+      "sure": 9.92,
+      "kelimeler": [
+        {
+          "kelime": "Kimse",
+          "baslangic": 0.0,
+          "bitis": 0.4
+        },
+        {
+          "kelime": "Fatma",
+          "baslangic": 0.52,
+          "bitis": 0.72
+        },
+        {
+          "kelime": "Teyze'yi",
+          "baslangic": 0.8,
+          "bitis": 1.12
+        },
+        {
+          "kelime": "hatırlamıyor.",
+          "baslangic": 1.2,
+          "bitis": 2.08
+        },
+        {
+          "kelime": "Ne",
+          "baslangic": 2.24,
+          "bitis": 2.32
+        },
+        {
+          "kelime": "yapacaksın?",
+          "baslangic": 2.36,
+          "bitis": 2.96
+        },
+        {
+          "kelime": "A:",
+          "baslangic": 3.6,
+          "bitis": 3.92
+        },
+        {
+          "kelime": "Şoföre",
+          "baslangic": 4.4,
+          "bitis": 4.8
+        },
+        {
+          "kelime": "git,",
+          "baslangic": 4.92,
+          "bitis": 5.12
+        },
+        {
+          "kelime": "otobüsü",
+          "baslangic": 5.28,
+          "bitis": 5.76
+        },
+        {
+          "kelime": "durdurmasını",
+          "baslangic": 5.8,
+          "bitis": 6.4
+        },
+        {
+          "kelime": "iste.",
+          "baslangic": 6.6,
+          "bitis": 7.16
+        },
+        {
+          "kelime": "B:",
+          "baslangic": 7.52,
+          "bitis": 8.04
+        },
+        {
+          "kelime": "Sessizce",
+          "baslangic": 8.32,
+          "bitis": 8.96
+        },
+        {
+          "kelime": "kendin",
+          "baslangic": 9.0,
+          "bitis": 9.36
+        },
+        {
+          "kelime": "ara.",
+          "baslangic": 9.48,
+          "bitis": 9.92
+        }
+      ]
+    }
+  }
+}

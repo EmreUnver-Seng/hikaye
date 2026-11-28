@@ -31,6 +31,8 @@ import tempfile
 from collections import namedtuple
 from pathlib import Path
 
+from PIL import ImageFont
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from senaryo import (SenaryoHatasi, kart_okuma_metni, kelime_kok,  # noqa: E402
                      secenek_gorseli, secenek_metni, senaryo_yukle)
@@ -85,6 +87,7 @@ KART_IC_PAY = 20                     # kart kenarı ile görsel arası
 KART_GORSEL_YARICAP = 24
 YEDEK_ZEMIN = ((35, 42, 72), 210)    # görsel yoksa harfin arkasındaki kare
 KART_METIN_Y = KART_Y + KART_IC_PAY + KART_GORSEL + 18
+KART_HARF_BOYU = 68
 KART_SATIR = 14                      # kart metninde satır başına en fazla karakter
 SORU_ALT_Y = 700                     # soru bu çizgiye alttan dayanır (yukarı doğru büyür)
 CAGRI_Y = KART_Y + KART_YUK + 90
@@ -407,6 +410,28 @@ def _kart_merkezi(i):
     return KART_XLER[i] + KART_GEN // 2
 
 
+def _kart_metnini_sigdir(metin, gorselli):
+    """Metni kartın iç genişliğine ve alt bölümde kalan yüksekliğe sığdır."""
+    genislik = KART_GEN - 2 * KART_IC_PAY - 4
+    ayrilan = 86 if gorselli else 20  # harf satırı veya yedek düzende üst boşluk
+    yukseklik = KART_Y + KART_YUK - KART_METIN_Y - ayrilan - KART_IC_PAY
+    kelimeler = metin.split()
+    for boy in range(48, 0, -1):
+        font = ImageFont.truetype(str(FONT_KLASORU / FONT_DOSYASI), boy)
+        if any(font.getlength(kelime) > genislik for kelime in kelimeler):
+            continue
+        satirlar = []
+        for kelime in kelimeler:
+            aday = f"{satirlar[-1]} {kelime}" if satirlar else kelime
+            if satirlar and font.getlength(aday) <= genislik:
+                satirlar[-1] = aday
+            else:
+                satirlar.append(kelime)
+        if len(satirlar) * sum(font.getmetrics()) <= yukseklik:
+            return boy, "\\N".join(ass_kacir(satir) for satir in satirlar)
+    raise MontajHatasi("Seçenek metni karta sığmıyor.")
+
+
 def kart_olaylari(ikilem, baslangic, sure, plan=None):
     """Seçenek kartının yazıları: soru, kartlardaki harf + metin ve yorum çağrısı.
 
@@ -424,18 +449,18 @@ def kart_olaylari(ikilem, baslangic, sure, plan=None):
         olaylar = [_olay(gec, bitis, "Soru", f"{{\\an5\\pos(540,860){_FAD}}}{soru}")]
     for i, k in enumerate(plan):
         x = _kart_merkezi(i)
-        metin = "\\N".join(ass_kacir(satir) for satir in satirlara_bol(k.metin))
+        boy, metin = _kart_metnini_sigdir(k.metin, k.gorsel is not None)
         if k.gorsel is None:  # yedek düzen: görselin yerinde büyük harf, altta yalnızca metin
             orta = KART_Y + KART_IC_PAY + KART_GORSEL // 2
             olaylar.append(_olay(gec, bitis, "Harf",
                                  f"{{\\an5\\pos({x},{orta}){_FAD}\\c{VURGU}}}{k.harf}"))
             olaylar.append(_olay(gec, bitis, "Kart",
-                                 f"{{\\an8\\pos({x},{KART_METIN_Y + 20}){_FAD}}}{metin}"))
+                                 f"{{\\an8\\pos({x},{KART_METIN_Y + 20}){_FAD}\\fs{boy}}}{metin}"))
         else:
             olaylar.append(_olay(
                 gec, bitis, "Kart",
                 f"{{\\an8\\pos({x},{KART_METIN_Y}){_FAD}}}"
-                f"{{\\fs76\\c{VURGU}}}{k.harf}{{\\fs48\\c{BEYAZ}}}\\N{metin}"))
+                f"{{\\fs{KART_HARF_BOYU}\\c{VURGU}}}{k.harf}{{\\fs{boy}\\c{BEYAZ}}}\\N{metin}"))
     cagri = "Yorumlara A ya da B yaz" if plan else "Yorumlara yaz"
     y = CAGRI_Y if plan else 1100
     olaylar.append(_olay(gec, bitis, "Not", f"{{\\an5\\pos(540,{y}){_FAD}}}{cagri}"))

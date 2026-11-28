@@ -329,6 +329,10 @@ def test_kart_olaylari_gorselli():
     kontrol("görselsiz B büyük harfli", metin.count(",Harf,") == 1, metin)
     kontrol("B metni iki satır", "Söz verdin,\\Naçma" in b, b)
     kontrol("çağrı kartların altında", f"\\pos(540,{KART_Y + 640 + 90})" in metin, metin)
+    uzun = [KartSecenegi("A", "Şoföre git, otobüsü durdurmasını iste", Path("g/secenek_A.png"), True)]
+    a = kart_olaylari(IKILEM, 10.0, 4.0, uzun)[1]
+    kontrol("uzun A metni iki satıra küçülür",
+            "\\fs48" not in a and "Şoföre git, otobüsü\\Ndurdurmasını iste" in a, a)
 
 
 def test_satirlara_bol():
