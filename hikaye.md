@@ -123,7 +123,7 @@ Kazanan seçimler `durum.json`'a yazılır. İki seçim sonraki bölümlerde kü
 ### Seçilmeyen yol sekansı (kalıcı kural, Bölüm 2'den itibaren her bölümde)
 - Her bölümde, önceki bölümde **seçilmeyen** seçeneği hatırlatan kısa bir sekans bulunur (Bölüm 1'de yoktur; önceki seçim bilgisi `durum.json`'dan gelir).
 - Amaç: (1) önceki bölümü kısaca hatırlatmak, (2) yeni gelen izleyiciye önceki bölümü de merak ettirmek, (3) o seçim yapılsaydı ne olacağının **asla bilinmeyeceği** hissini vermek. Seçilmeyen yolun sonucu gösterilmez ve açıklanmaz, yalnızca ima edilir.
-- **Yeri sabit: bölümün açılışı (1. sahne).** Kısa tutulur: tek sahne, birkaç saniye; bölümün 8–12 sahnesinden biri sayılır. Görsel ve anlatım biçimi bölüm senaryosunda belirlenir.
+- **Yeri sabit: bölümün açılışı (1. sahne).** Kısa tutulur: tek sahne, birkaç saniye; bölümün 8–12 sahnesinden biri sayılır. Görsel ve anlatım biçimi bölüm senaryosunda belirlenir. Bu sahne boyunca ekranın üstünde bölümün `kanca` yazısı durur (kural, `CLAUDE.md` → Senaryo yazım kuralları). Önceki bölümün oy sonucu ("%62'niz B dedi") bu sahneye eklenebilir; kural değil, her bölümde kullanıcıya sorulur.
 
 ### Hatırlanan seçimlerin etkisi
 - **B1 (zarf):** Bölüm 1'de A seçildiyse Fatma finalde "Açtın, değil mi? İyi ki açmışsın" der; B seçildiyse "Sözünü tuttun" der.

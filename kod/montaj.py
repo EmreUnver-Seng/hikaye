@@ -3,7 +3,7 @@
 Her sahne yavaş zoom'lu bir klip olur; cümle sesleri arka arkaya dizilir; o an
 söylenen kelimesi vurgulu altyazı ve sonda ikilem (seçenek) kartı eklenir.
 Kartı anlatıcı okur (sesler/kart.mp3, ses.py üretir; yoksa kart sessiz kalır).
-Senaryoda 'kanca' varsa ilk 2 sn ekranın üstünde kısa bir yazı olarak görünür.
+Senaryodaki 'kanca' açılış sahnesi (1. sahne) boyunca ekranın üstünde kısa bir yazı olarak görünür.
 Ses, sonda iki geçişli loudnorm ile -14 LUFS'a getirilir (video yeniden kodlanmaz).
 Seçim kartında A ve B yan yana iki yuvarlak köşeli kart olur; kartın üstünde
 seçenek görseli (gorseller/secenek_A.png), altında harf ve metin. Görsel yoksa
@@ -66,8 +66,9 @@ _FAD = f"\\fad({round(KART_BELIRME * 1000)},0)"
 KART_SES_BAS = KART_GECIKME + KART_BELIRME  # anlatıcı, kart belirdikten sonra okumaya başlar
 KART_SES_SONU = 1.5  # okuma bittikten sonra kartın ekranda kalma süresi (yorum yazma payı)
 
-# --- Kanca yazısı (senaryoda 'kanca' varsa, yalnızca 1. sahnenin başında) ---
-KANCA_BAS, KANCA_BIT = 0.1, 2.2   # sn
+# --- Kanca yazısı (kural 2026-11-28: açılış sahnesi boyunca, ilk kareden itibaren) ---
+KANCA_BAS = 0.0                   # sn; ilk karede görünür (belirme geçişi yok)
+KANCA_KAYBOLMA = 450              # ms; açılış sahnesinin sonunda kaybolma geçişi
 KANCA_Y = 300                     # üst üçte bir; platform arayüzünün altında kalır
 KANCA_SATIR = 22                  # satır başına en fazla karakter
 
@@ -468,12 +469,14 @@ def kart_olaylari(ikilem, baslangic, sure, plan=None):
 
 
 def kanca_olaylari(kanca, cizelge):
-    """'kanca' yazısı: yalnızca video 1. sahneyle başlıyorsa, ilk ~2 sn, üstte, yumuşak geçişli."""
+    """'kanca' yazısı: video 1. sahneyle başlıyorsa, ilk kareden 1. sahnenin sonuna kadar, üstte."""
     if not kanca or not cizelge.sahneler or cizelge.sahneler[0][0] != 1:
         return []
+    _no, _gorsel, bas, kare = cizelge.sahneler[0]
+    bit = bas + kare / FPS
     metin = "\\N".join(ass_kacir(s) for s in satirlara_bol(kanca.strip(), KANCA_SATIR))
-    return [_olay(KANCA_BAS, KANCA_BIT, "Kanca",
-                  f"{{\\an8\\pos(540,{KANCA_Y})\\fad(250,450)}}{metin}")]
+    return [_olay(KANCA_BAS, bit, "Kanca",
+                  f"{{\\an8\\pos(540,{KANCA_Y})\\fad(0,{KANCA_KAYBOLMA})}}{metin}")]
 
 
 def ass_metni(cizelge, ikilem, plan=None, kanca=None):

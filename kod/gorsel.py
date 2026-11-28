@@ -49,6 +49,14 @@ STIL = ("Stil: 2 boyutlu dijital çizgi film illüstrasyonu (yetişkinlere yöne
         "(sahne tarifinde açıkça geçen tabela yazısı hariç).")
 SAHNE_ISIK = ("Loş, sinematik ışık; mekânın ışık rengi (gece lambası, floresan, sodyum lamba) "
               "karakterlerin üzerine de düşer.")
+SAHNE_DERINLIK = (
+    "2.5D sahne kompozisyonu: Karakterler 2B çizilir; derinliği mekân taşır. "
+    "Mat, hafif hacimli yüzeyler, tutarlı perspektif ve ışıkla ön planı, "
+    "karakterlerin bulunduğu orta planı ve arka planı ayır. Sahneye uygunsa "
+    "yakındaki bir öğeyle kadrajı çerçevele ve uzak planı hafifçe yumuşat. "
+    "Derinlik, sahne tarifindeki hareketi ve bakışları örtmesin."
+)
+SAHNE_STIL_KIMLIK = "stil-sahne"
 STIL_KIMLIK = "stil"  # karakterler/stil.png: yalnızca çizim tarzı örneği
 
 
@@ -130,13 +138,15 @@ def mekan_tarifleri(hikaye_metni):
     return tarifler
 
 
-def sahne_promptu(sahne, karakterler, stil_var=False, mekanlar=None):
+def sahne_promptu(sahne, karakterler, stil_var=False, mekanlar=None, *, sahne_stili=False):
     """Gemini uygulamasına yapıştırılacak sahne prompt'u.
 
     stil_var: karakterler/stil.png karakter referanslarından sonra en sona eklenecek mi?
     mekanlar: mekan_tarifleri() sonucu; sahnede 'mekan' varsa tarifi eklenir.
     """
-    satirlar = [STIL, SAHNE_ISIK, "Dikey 9:16 kompozisyon."]
+    karakter_stili = STIL.replace("Fotogerçekçi değil, 3D değil.",
+                                  "Fotogerçekçi görünüm ve 3B karakter renderı kullanma.")
+    satirlar = [karakter_stili, SAHNE_DERINLIK, SAHNE_ISIK, "Dikey 9:16 kompozisyon."]
     if sahne["karakterler"]:
         satirlar.append("Karakterler (ekteki referans görsellere birebir uy: yüz, saç, "
                         "kıyafet ve renkler aynı kalsın):")
@@ -146,8 +156,14 @@ def sahne_promptu(sahne, karakterler, stil_var=False, mekanlar=None):
                                    "('### ...' bölümü, 'Görünüş' ve 'Referans' satırları gerekli).")
             k = karakterler[kimlik]
             satirlar.append(f"- Ekteki {i}. görsel: {k.ad} — {k.gorunus}")
-    if stil_var:
-        satirlar.append(_stil_satiri(len(sahne["karakterler"]) + 1))
+    stil_sirasi = len(sahne["karakterler"]) + 1
+    if sahne_stili:
+        satirlar.append(
+            f"Ekteki {stil_sirasi}. görsel sahne derinliği, ışık ve çizim dili örneğidir. "
+            "Sahnenin kişilerini, nesnelerini, mekânını ve kadrajını kendi tarifinden al."
+        )
+    elif stil_var:
+        satirlar.append(_stil_satiri(stil_sirasi))
     mekan = sahne.get("mekan")
     if mekan and mekanlar and mekan in mekanlar:
         satirlar.append(f"Mekân: {mekanlar[mekan]}")
@@ -257,6 +273,7 @@ def istekler_metni(veri, karakterler, kok, mekanlar=None):
         "",
     ]
     stil_var = referans_yolu(kok, STIL_KIMLIK).exists()
+    sahne_stili = referans_yolu(kok, SAHNE_STIL_KIMLIK).exists()
     for sahne in veri["sahneler"]:
         no = sahne["no"]
         satirlar.append(f"## Sahne {no}")
@@ -266,10 +283,13 @@ def istekler_metni(veri, karakterler, kok, mekanlar=None):
             satirlar += [f"- `{komut} --karakter {k}`" for k in eksik]
         else:
             refler = [f"karakterler/{k}.png" for k in sahne["karakterler"]]
-            if stil_var:
+            if sahne_stili:
+                refler.append(f"karakterler/{SAHNE_STIL_KIMLIK}.png")
+            elif stil_var:
                 refler.append(f"karakterler/{STIL_KIMLIK}.png")
             satirlar.append(f"Referans: {', '.join(refler) if refler else 'yok'}")
-            satirlar += ["```", sahne_promptu(sahne, karakterler, stil_var, mekanlar), "```"]
+            prompt = sahne_promptu(sahne, karakterler, stil_var, mekanlar, sahne_stili=sahne_stili)
+            satirlar += ["```", prompt, "```"]
         satirlar.append("")
     for harf, (metin, tarif) in secenek_gorselleri(veri).items():
         ref = f"karakterler/{STIL_KIMLIK}.png" if stil_var else "yok"

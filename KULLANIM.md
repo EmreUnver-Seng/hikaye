@@ -49,6 +49,8 @@ Konu değişirse aynı sohbette devam etme, yeni oturum aç.
 ## Bölüm üretimi (Faz B, ~20–40 dk)
 - [ ] Oylama bitti → yeni oturum "Bölüm N"
 - [ ] "X kazandı, durum.json'a işle ve Bölüm N'in senaryosunu yaz"
+- [ ] Önceki bölümün oy sonucunu (yüzde + oy sayısı) açılışa eklemek ister misin? Karar ver, istersen sayıları söyle
+- [ ] Senaryoda `kanca` yazısı var mı? (Bölüm 2+ zorunlu, en fazla 6 kelime, açılış sahnesi boyunca görünür)
 - [ ] Senaryoyu VS Code'da oku ve düzelt
 - [ ] Karakter referansı eksikse: `python kod/gorsel.py bolumler/bolum_NN/senaryo.json --karakter <kimlik>` → Gemini uygulamasında üret → `--yerlestir <kimlik>`
 - [ ] `python kod/gorsel.py bolumler/bolum_NN/senaryo.json` → `gorseller/istekler.md`'deki her sahne için Gemini uygulamasında bir görsel üret, indir → `--yerlestir <sahne no>` (dosya verilmezse İndirilenler'deki en yeni görseli önerir). Gerektiğinde alternatif dosyaları aynı komuta ekleyebilirsin.
@@ -78,7 +80,8 @@ git status                                 # neler değişti?
 - **Oturunca:** `git pull`.
 - İki cihazda aynı anda değişiklik yapma.
 - `.env` git'te yoktur: anahtarlar şifre yöneticisinde (Apple Şifreler) dursun.
-- `karakterler/stil.png` (görsel stil örneği) git'te yoktur: `hikaye-medya` yedeğiyle birlikte diğer cihaza elle kopyala; yoksa `gorsel.py` istekleri stil örneği olmadan yazar.
+- Sahne stili örneği `karakterler/stil-sahne.png` sahne isteklerinde otomatik listelenir.
+- `karakterler/stil.png` (karakter ve seçim kartı stil örneği) git'te yoktur: `hikaye-medya` yedeğiyle birlikte diğer cihaza elle kopyala; yoksa `gorsel.py` istekleri stil örneği olmadan yazar.
 - Bölüm sesleri (`bolumler/*/sesler/`, ~2 MB/bölüm) git'e girer: diğer cihazda `git pull` yeter, yeniden seslendirmek (kredi) gerekmez.
 - Diğer üretilen medya (görseller, video) git'te yoktur: iCloud Drive'daki `hikaye-medya` klasörüne yedekle. Proje klasörünün tamamını iCloud'a koyma.
 

@@ -20,7 +20,7 @@ from montaj import (  # noqa: E402
     CUMLE_ARASI,
     CUMLE_SONU_PAYI,
     FONT_ADI,
-    KANCA_BIT,
+    FPS,
     KART_SES_BAS,
     KART_SES_SONU,
     SAHNE_SONU,
@@ -394,7 +394,12 @@ def test_kanca():
     c = zaman_cizelgesi(_girdiler(), {"s01_c1": 1.0, "s01_c2": 2.0, "s02_c1": 1.0})
     olay = kanca_olaylari("Yanındaki koltuk neden boş?", c)
     kontrol("kanca tek olay", len(olay) == 1, olay)
-    kontrol("kanca üstte, 2 sn", "\\an8" in olay[0] and ass_zaman(KANCA_BIT) in olay[0], olay)
+    _no, _g, bas, kare = c.sahneler[0]
+    sahne1_sonu = bas + kare / FPS
+    kontrol("kanca üstte, açılış sahnesi boyunca",
+            "\\an8" in olay[0] and ass_zaman(sahne1_sonu) in olay[0] and sahne1_sonu > 2.5, olay)
+    kontrol("kanca ilk karede, belirme yok",
+            olay[0].startswith("Dialogue: 0,0:00:00.00,") and "\\fad(0," in olay[0], olay)
     kontrol("kanca iki satır", "\\N" in olay[0], olay)
     kontrol("kanca yoksa olay yok", kanca_olaylari(None, c) == [])
     sadece2 = zaman_cizelgesi(_girdiler()[1:], {"s02_c1": 1.0})

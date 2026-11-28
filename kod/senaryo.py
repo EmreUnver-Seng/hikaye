@@ -32,8 +32,10 @@ CUMLE_KELIME_SINIRI = 25
 SON_BOLUM = 8  # finalde seçenek yok, yalnızca soru
 
 KOK_ALANLAR = {"bolum", "baslik", "sahneler", "ikilem"}
-KOK_ISTEGE_BAGLI = {"kanca"}  # ilk 2 sn ekranın üstünde duran kısa yazı (isteğe bağlı)
+KOK_ISTEGE_BAGLI = {"kanca"}  # açılış sahnesi boyunca ekranın üstünde duran kısa yazı
 KANCA_KELIME_SINIRI = 6
+# Kanca kural olarak zorunlu (2026-11-28). Bölüm 1 yayınlandı ve değişmeyecek, kancası yok.
+KANCA_ZORUNLU_BOLUM = 2
 SAHNE_ALANLARI = {"no", "gorsel", "karakterler", "cumleler"}
 SAHNE_ISTEGE_BAGLI = {"mekan", "saat"}  # 'mekan' yoksa uyarı verilir; 'saat' isteğe bağlı
 SAAT_ALANLARI = {"bas", "bit", "yon", "cumle", "kelime"}  # sahnedeki saat animasyonu
@@ -123,6 +125,9 @@ def dogrula(veri, klasor_adi=None):
     bolum = _bolum_dogrula(d, veri.get("bolum"), klasor_adi) if "bolum" in veri else None
     if "baslik" in veri:
         d.metin(veri["baslik"], "baslik")
+    if "kanca" not in veri and isinstance(bolum, int) and bolum >= KANCA_ZORUNLU_BOLUM:
+        d.hata("kanca", "her bölümde zorunlu (kural 2026-11-28): açılış sahnesi boyunca üstte "
+                        f"duran en fazla {KANCA_KELIME_SINIRI} kelimelik yazı.")
     if "kanca" in veri and d.metin(veri["kanca"], "kanca"):
         n = _kelime_sayisi(veri["kanca"])
         if n > KANCA_KELIME_SINIRI:

@@ -38,6 +38,8 @@ def gecerli_ornek(bolum=1):
     veri = {"bolum": bolum, "baslik": "Kalkış", "sahneler": sahneler,
             "ikilem": {"soru": "Zarfı açacak mısın?",
                        "secenekler": {"A": "Zarfı aç", "B": "Açma"}}}
+    if bolum >= 2:
+        veri["kanca"] = "Bir yolcu nasıl kaybolur?"  # Bölüm 2+ zorunlu
     if bolum == 8:
         del veri["ikilem"]["secenekler"]
     return veri
@@ -432,6 +434,14 @@ def test_ton_istege_bagli():
     uyari_icerir(bozuk(ton("very very slow and quiet and sad")), "ton")
     hata_icerir(bozuk(lambda v: v["sahneler"][0]["cumleler"][0].update(metin="[sighs] Ah.")),
                 "etiket")
+
+
+def test_kanca_bolum2den_itibaren_zorunlu():
+    hata_icerir(bozuk(lambda v: v.pop("kanca"), bolum=3), "zorunlu")
+    hatalar, _ = dogrula(gecerli_ornek(1))
+    assert hatalar == [], hatalar  # Bölüm 1'de kanca yok, yayınlandı ve değişmiyor
+    hatalar, _ = dogrula(gecerli_ornek(2))
+    assert hatalar == [], hatalar
 
 
 if __name__ == "__main__":
