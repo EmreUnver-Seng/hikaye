@@ -123,7 +123,13 @@ Kazanan seçimler `durum.json`'a yazılır. İki seçim sonraki bölümlerde kü
 ### Seçilmeyen yol sekansı (kalıcı kural, Bölüm 2'den itibaren her bölümde)
 - Her bölümde, önceki bölümde **seçilmeyen** seçeneği hatırlatan kısa bir sekans bulunur (Bölüm 1'de yoktur; önceki seçim bilgisi `durum.json`'dan gelir).
 - Amaç: (1) önceki bölümü kısaca hatırlatmak, (2) yeni gelen izleyiciye önceki bölümü de merak ettirmek, (3) o seçim yapılsaydı ne olacağının **asla bilinmeyeceği** hissini vermek. Seçilmeyen yolun sonucu gösterilmez ve açıklanmaz, yalnızca ima edilir.
-- **Yeri sabit: bölümün açılışı (1. sahne).** Kısa tutulur: tek sahne, birkaç saniye; bölümün 8–12 sahnesinden biri sayılır. Görsel ve anlatım biçimi bölüm senaryosunda belirlenir.
+- **Yeri sabit: bölümün açılışı (1. sahne).** Kısa tutulur: tek sahne, birkaç saniye; bölümün 8–12 sahnesinden biri sayılır. İçerik bölüm senaryosunda belirlenir; görünüşü ve okunuşu aşağıdaki "Kanca sahnesi" kuralına uyar.
+
+### Kanca sahnesi: ayrı bir zaman gibi hissettir (kalıcı kural, yalnız Son Durak, karar 2026-11-28)
+- **Sorun:** Bölüm başındaki ~3 sn'lik kanca sahnesi (Bölüm 2'den itibaren seçilmeyen yol sekansı, 1. sahne) bölümün geri kalanıyla aynı görünüp aynı okunursa izleyici onu olayın devamı sanıyor. Kanca, hikâyenin "şimdi"sinden ayrı bir an (olmayan bir ihtimal, geçmiş ya da ileri bir an) olarak hissedilmeli.
+- **Görsel: kontrast farkı.** Kanca sahnesinin görseli, bölümün normal paletinden (mor-mavi gece ışığı, sodyum turuncusu, floresan) belirgin biçimde ayrılan bir tonda olur: soluk/düşük doygunluklu ve sert kontrastlı, "başka bir zaman" hissi veren bir kare. Ton sezon boyunca aynı kalır ki izleyici öğrensin: "bu renk = şu an değil." 2. sahneyle birlikte normal palete dönülür; kesme bu farkı belirginleştirir.
+- **Ses: anlatıcı fısıldar.** Kanca cümlesi(leri) anlatıcının aynı sesiyle ama **fısıltıyla** okunur; 2. sahneden itibaren normal anlatıma dönülür. Ortam sesi kanca sahnesinde de bulunur ama fısıltıyı bastırmaz.
+- **Uygulama durumu:** Şimdilik elle: görsel istem metnine (`gorsel` alanı) ton tarifi eklenir, kanca cümlesi ElevenLabs'ta fısıltıyla ayrı üretilip en iyisi seçilir. Pipeline'da otomatik desteği (ör. `montaj.py`'de renk filtresi, `ses.py`'de fısıltı ses etiketi, altyazıya etiket yazılmadan) henüz yok; Kod oturumunda eklenebilir.
 
 ### Hatırlanan seçimlerin etkisi
 - **B1 (zarf):** Bölüm 1'de A seçildiyse Fatma finalde "Açtın, değil mi? İyi ki açmışsın" der; B seçildiyse "Sözünü tuttun" der.
